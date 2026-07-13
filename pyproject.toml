@@ -29,3 +29,6 @@ test = [
 
 [tool.setuptools.packages.find]
 include = ["proof_goblin*"]
+
+[tool.setuptools.package-data]
+proof_goblin = ["schemas/*.json"]

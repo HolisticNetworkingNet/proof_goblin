@@ -19,7 +19,13 @@ from proof_goblin.config import (
     ConfigValidationError,
     ReviewDefinition,
 )
-from proof_goblin.observations import Observation, ReviewResult, TokenUsage
+from proof_goblin.observations import (
+    REVIEW_RESULT_FORMAT,
+    REVIEW_RESULT_SCHEMA_VERSION,
+    Observation,
+    ReviewResult,
+    TokenUsage,
+)
 from proof_goblin.providers import (
     DEFAULT_OPENAI_MODEL,
     OpenAIProvider,
@@ -59,6 +65,8 @@ __all__ = [
     "ProviderResponseError",
     "ProviderUnavailableError",
     "ResolvedReview",
+    "REVIEW_RESULT_FORMAT",
+    "REVIEW_RESULT_SCHEMA_VERSION",
     "ReviewError",
     "ReviewDefinition",
     "ReviewOutputValidationError",

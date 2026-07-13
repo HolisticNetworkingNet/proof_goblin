@@ -17,6 +17,7 @@ concepts
 configuration
 prompt-assembly
 openai-provider
+host-integration
 getting-started
 development
 ```

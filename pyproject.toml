@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proof-goblin"
+version = "0.1.0"
+description = "A configurable AI review engine built around reusable proof lenses."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "LicenseRef-Proprietary"
+license-files = ["LICENSE"]
+
+[project.optional-dependencies]
+docs = [
+    "furo>=2024.8.6",
+    "myst-parser>=4.0",
+    "sphinx>=8.1",
+]
+test = [
+    "pytest>=8.3",
+]
+
+[tool.setuptools.packages.find]
+include = ["proof_goblin*"]

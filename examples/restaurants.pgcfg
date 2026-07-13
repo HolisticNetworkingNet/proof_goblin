@@ -1,0 +1,69 @@
+{
+  "format": "proof-goblin-config",
+  "schema_version": "1.0",
+  "name": "restaurants",
+  "version": "0.1.0",
+  "description": "Reusable review definitions for restaurant websites.",
+  "lenses": {
+    "first_time_diner": {
+      "description": "A potential customer unfamiliar with the restaurant.",
+      "circumstances": [
+        "Arrived from a search result or recommendation",
+        "May be comparing several restaurants",
+        "Has limited patience"
+      ],
+      "goals": [
+        "Understand the restaurant's identity",
+        "Decide whether the menu fits their needs",
+        "Find location, hours, and reservation information"
+      ]
+    },
+    "restaurant_owner": {
+      "description": "An owner concerned with how accurately the site represents the business.",
+      "goals": [
+        "Confirm that important offerings are visible",
+        "Identify misleading or outdated information",
+        "Ensure customers can take the intended next step"
+      ]
+    }
+  },
+  "missions": {
+    "homepage_clarity": {
+      "questions": [
+        "What might prevent the visitor from understanding the restaurant?",
+        "What information appears missing or difficult to find?",
+        "Where might the visitor hesitate or become uncertain?"
+      ]
+    }
+  },
+  "protocols": {
+    "questions_only": {
+      "rewrite_content": false,
+      "provide_solutions": false,
+      "ask_questions": true,
+      "require_evidence": true,
+      "avoid_speculation": true
+    }
+  },
+  "output_schemas": {
+    "observation.v1": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["question", "evidence"],
+        "properties": {
+          "question": {"type": "string"},
+          "evidence": {"type": "string"}
+        }
+      }
+    }
+  },
+  "reviews": {
+    "homepage_first_pass": {
+      "lens": "first_time_diner",
+      "mission": "homepage_clarity",
+      "protocol": "questions_only",
+      "output_schema": "observation.v1"
+    }
+  }
+}

@@ -15,3 +15,15 @@ The project is intended to serve as a lightweight Python library that can be emb
 - **Framework Agnostic** — The core engine has no dependency on Django or other application frameworks.
 
 Proof Goblin is currently under active development and should be considered experimental.
+
+## Documentation
+
+The project documentation is written in Markdown and built with Sphinx, MyST,
+and Furo. To build it locally:
+
+```bash
+python -m pip install -e ".[docs]"
+python -m sphinx -W --keep-going -b html proof_goblin/docs proof_goblin/docs/_build/html
+```
+
+Open `proof_goblin/docs/_build/html/index.html` to view the generated site.

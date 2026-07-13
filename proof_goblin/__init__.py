@@ -3,6 +3,12 @@
 
 """Proof Goblin public package interface."""
 
+from proof_goblin.builder import (
+    Prompt,
+    PromptBuildError,
+    PromptBuilder,
+    ResolvedReview,
+)
 from proof_goblin.config import (
     CONFIG_FORMAT,
     SUPPORTED_SCHEMA_VERSIONS,
@@ -22,5 +28,9 @@ __all__ = [
     "ConfigError",
     "ConfigParseError",
     "ConfigValidationError",
+    "Prompt",
+    "PromptBuildError",
+    "PromptBuilder",
+    "ResolvedReview",
     "ReviewDefinition",
 ]

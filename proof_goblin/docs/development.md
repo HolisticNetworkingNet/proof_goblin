@@ -7,10 +7,9 @@ configuration schema have not yet been implemented.
 The initial development milestones are:
 
 1. load and validate a `.pgcfg` configuration bundle (complete);
-2. resolve a named review into its lens, mission, protocol, and output schema;
-3. assemble and inspect the generated prompt;
-4. send the review to a provider and parse structured observations; and
-5. expose the workflow through a small command-line interface.
+2. resolve a named review and assemble an inspectable prompt (complete);
+3. send the review to a provider and parse structured observations; and
+4. expose the workflow through a small command-line interface.
 
 The first milestones intentionally do not require an AI provider. Prompt
 assembly and configuration validation should be testable deterministically.

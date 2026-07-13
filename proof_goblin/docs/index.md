@@ -15,6 +15,7 @@ versioned, and reproduced.
 overview
 concepts
 configuration
+prompt-assembly
 getting-started
 development
 ```

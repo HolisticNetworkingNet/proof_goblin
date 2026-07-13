@@ -7,7 +7,7 @@ review components.
 ```python
 from proof_goblin import Config
 
-config = Config.load("examples/restaurants.pgcfg")
+config = Config.load("proof_goblin/examples/restaurants.pgcfg")
 review = config.review("homepage_first_pass")
 ```
 
@@ -35,4 +35,4 @@ A configuration loaded from disk records its resolved source path and SHA-256
 digest. These values can later be included in observation output to identify the
 exact configuration bytes used for a review.
 
-See `examples/restaurants.pgcfg` for a complete working bundle.
+See `proof_goblin/examples/restaurants.pgcfg` for a complete working bundle.

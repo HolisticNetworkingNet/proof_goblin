@@ -17,7 +17,7 @@ from proof_goblin import (
 )
 
 
-EXAMPLE_CONFIG = Path(__file__).parents[2] / "examples" / "restaurants.pgcfg"
+EXAMPLE_CONFIG = Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
 
 
 def valid_config() -> dict[str, object]:

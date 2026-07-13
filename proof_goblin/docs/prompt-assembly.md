@@ -1,4 +1,4 @@
-# Prompt assembly
+# Prompt Assembly
 
 `PromptBuilder` resolves a named review and combines its components with an
 artifact. Prompt assembly is deterministic and does not contact an AI provider.
@@ -41,4 +41,5 @@ material. Artifact content is never interpolated into the system instructions.
 
 The assembled prompt records the review and configuration names, configuration
 version and digest, artifact name and media type, and the artifact's SHA-256
-digest. This information can later travel with generated observations.
+digest. `Reviewer.review()` carries this information into the resulting
+`ReviewResult`, whose serialized form can be stored by a host application.

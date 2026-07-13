@@ -1,4 +1,4 @@
-# Core concepts
+# Core Concepts
 
 Proof Goblin uses a small vocabulary to keep review configuration explicit.
 
@@ -26,9 +26,10 @@ prohibit rewriting, limit the response to questions, or constrain speculation.
 
 ## Observation
 
-An **Observation** is a structured result from a review. It records a question
-or concern, its supporting evidence, and the provenance needed to understand how
-it was produced.
+An **Observation** is one structured finding from a review. It records a
+question and the concrete evidence that prompted it. The surrounding
+`ReviewResult` records the provenance needed to understand how the observations
+were produced.
 
 ## Configuration bundle
 
@@ -39,5 +40,6 @@ For example, a restaurant-focused bundle could define both a first-time diner
 lens and a restaurant-owner lens, then reuse them across several homepage or
 menu-review missions.
 
-The exact configuration schema has not yet been finalized. Treat examples and
-early files as design material until a schema version is published.
+Proof Goblin currently supports configuration schema version `1.0`. The loader
+validates the required envelope and all named review references while leaving
+the internal vocabulary of lenses, missions, and protocols flexible.

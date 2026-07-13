@@ -1,0 +1,202 @@
+{
+  "format": "proof-goblin-config",
+  "schema_version": "1.0",
+  "name": "documentation",
+  "version": "0.1.0",
+  "description": "Reusable lenses and reviews for writing, understanding, and maintaining documentation.",
+  "lenses": {
+    "business_owner": {
+      "description": "An intelligent business owner or operator with strong knowledge of their organization, customers, and day-to-day work, but no assumed software-development knowledge.",
+      "circumstances": [
+        "Is reading to understand what a capability does and whether it matters to the business",
+        "Has limited time and may be comparing several possible courses of action",
+        "May encounter software terminology, acronyms, or implementation details that are not part of their normal work",
+        "Needs enough context to make a confident decision or take the next step"
+      ],
+      "knowledge": [
+        "Understands business operations, customer needs, costs, risks, and organizational responsibilities",
+        "Does not necessarily know Django, Python, APIs, deployment, or software architecture"
+      ],
+      "goals": [
+        "Understand what the documented capability enables",
+        "Understand why it is relevant and what outcome to expect",
+        "Identify what the business or user must provide, decide, or do",
+        "Recognize prerequisites, constraints, risks, and the next step"
+      ],
+      "routinely_notices": [
+        "Unexplained technical language",
+        "Unclear business outcomes",
+        "Hidden responsibilities, costs, or risks",
+        "Missing examples or context needed to make a decision"
+      ],
+      "perspective_guardrails": [
+        "Do not confuse a lack of software expertise with a lack of intelligence or domain expertise",
+        "Do not demand technical implementation detail unless its absence prevents a business decision"
+      ]
+    },
+    "django_python_developer": {
+      "description": "An experienced Python and Django developer responsible for understanding, integrating, operating, or extending production software.",
+      "circumstances": [
+        "Is reading in order to implement, integrate, configure, test, or troubleshoot the documented capability",
+        "Expects examples and instructions to be precise enough to follow without guessing",
+        "Needs to understand assumptions, contracts, failure modes, and operational consequences"
+      ],
+      "knowledge": [
+        "Python packaging, typing, testing, and common library conventions",
+        "Django models, settings, management commands, requests, templates, and deployment concerns",
+        "HTTP, APIs, databases, source control, CI, and production operations"
+      ],
+      "goals": [
+        "Implement or integrate the capability correctly",
+        "Identify required dependencies, settings, inputs, and lifecycle steps",
+        "Understand public contracts, errors, edge cases, and compatibility assumptions",
+        "Know how to test, diagnose, secure, and operate the result"
+      ],
+      "routinely_notices": [
+        "Ambiguous API shapes, types, return values, and ownership boundaries",
+        "Missing imports, settings, commands, prerequisites, or version assumptions",
+        "Examples that are incomplete, inconsistent, or unlikely to run as written",
+        "Unexplained failure modes, security implications, and operational edge cases"
+      ],
+      "perspective_guardrails": [
+        "Do not request low-level detail that is unrelated to using or maintaining the documented capability",
+        "Distinguish a genuine implementation blocker from a reasonable convention an experienced developer can infer"
+      ]
+    },
+    "technical_writer": {
+      "description": "An experienced technical writer evaluating documentation for audience fit, information architecture, clarity, consistency, and usefulness.",
+      "circumstances": [
+        "Is reviewing documentation that may serve business readers, developers, or both",
+        "Treats terminology, structure, examples, navigation, and cognitive load as parts of one reading experience",
+        "Looks for issues that prevent readers from finding, understanding, trusting, or acting on information"
+      ],
+      "knowledge": [
+        "Audience analysis, information architecture, progressive disclosure, and task-oriented documentation",
+        "Editing for clarity, consistency, accessibility, scannability, and maintainability",
+        "The distinction between conceptual, procedural, reference, and troubleshooting content"
+      ],
+      "goals": [
+        "Make the intended audience and purpose apparent",
+        "Ensure information appears in a useful sequence and at an appropriate level of detail",
+        "Keep terminology, claims, examples, and cross-references consistent",
+        "Identify gaps, duplication, ambiguity, and unnecessary cognitive load"
+      ],
+      "routinely_notices": [
+        "Buried prerequisites and unclear next steps",
+        "Vague headings, unclear antecedents, and inconsistent names for the same concept",
+        "Abrupt changes in audience, abstraction level, or document purpose",
+        "Dense passages, redundant explanations, unsupported claims, and missing connective context"
+      ],
+      "perspective_guardrails": [
+        "Do not impose a stylistic preference unless it materially affects the reader",
+        "Do not rewrite the artifact; identify the question the author should resolve"
+      ]
+    }
+  },
+  "missions": {
+    "business_comprehension": {
+      "description": "Identify barriers that prevent a non-technical business owner from understanding and acting on the documentation.",
+      "questions": [
+        "Is it clear what the documented capability does and what business outcome it supports?",
+        "Which terms or assumptions require software knowledge that the reader may not have?",
+        "Can the reader tell what they must decide, provide, or do next?",
+        "Are responsibilities, prerequisites, constraints, costs, or risks missing or difficult to find?",
+        "What context or example is required for the reader to judge whether this is relevant to them?"
+      ]
+    },
+    "developer_implementation": {
+      "description": "Identify gaps that would cause an experienced Django and Python developer to guess, make an unsafe assumption, or fail during implementation.",
+      "questions": [
+        "Are prerequisites, dependencies, supported versions, settings, and setup steps explicit?",
+        "Are public interfaces, inputs, outputs, types, side effects, and ownership boundaries clear?",
+        "Would the examples run as written and do they demonstrate the important path completely?",
+        "Are error behavior, edge cases, compatibility, security, and operational concerns explained where relevant?",
+        "Can the developer determine how to test, verify, diagnose, and safely roll out the result?"
+      ]
+    },
+    "technical_writing_quality": {
+      "description": "Evaluate whether the documentation is structured and written so its intended readers can find, understand, and use it.",
+      "questions": [
+        "Are the intended audience, purpose, scope, and expected outcome apparent?",
+        "Does the information progress in a useful order with prerequisites and next steps in the right places?",
+        "Are terminology, headings, examples, claims, links, and cross-references clear and consistent?",
+        "Where does sentence, paragraph, or section structure create unnecessary cognitive load?",
+        "What important information is missing, duplicated, buried, or presented at the wrong level of detail?"
+      ]
+    },
+    "front_end_readability": {
+      "description": "Evaluate the readability and scan path of reader-facing web content without turning the review into copy editing.",
+      "questions": [
+        "Can a reader understand the page's purpose and primary message from its headings and opening content?",
+        "Do headings, paragraphs, lists, labels, and links create a clear scan path?",
+        "Where do jargon, sentence complexity, dense paragraphs, or vague labels slow comprehension?",
+        "Are calls to action and link destinations understandable without surrounding context?",
+        "Does the content expose the most important information before secondary detail?"
+      ]
+    }
+  },
+  "protocols": {
+    "documentation_questions_only": {
+      "rewrite_content": false,
+      "provide_solutions": false,
+      "ask_questions": true,
+      "require_evidence": true,
+      "avoid_speculation": true,
+      "instructions": [
+        "Base every observation on the supplied artifact",
+        "Phrase each concern as a question for the author to resolve",
+        "Identify or quote the concrete evidence that prompted the question",
+        "Do not manufacture missing facts or assume the author's intended answer",
+        "Do not report personal preference as a defect",
+        "Prioritize issues that materially affect the intended reader"
+      ]
+    }
+  },
+  "output_schemas": {
+    "observation.v1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observations"],
+      "properties": {
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["question", "evidence"],
+            "properties": {
+              "question": {"type": "string"},
+              "evidence": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "reviews": {
+    "business_owner_first_pass": {
+      "lens": "business_owner",
+      "mission": "business_comprehension",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "django_developer_first_pass": {
+      "lens": "django_python_developer",
+      "mission": "developer_implementation",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "technical_writer_first_pass": {
+      "lens": "technical_writer",
+      "mission": "technical_writing_quality",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "front_end_readability": {
+      "lens": "technical_writer",
+      "mission": "front_end_readability",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    }
+  }
+}

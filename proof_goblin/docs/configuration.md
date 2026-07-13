@@ -1,4 +1,4 @@
-# Configuration bundles
+# Configuration Bundles
 
 Proof Goblin configuration bundles use the `.pgcfg` extension. Version 1.0 files
 are UTF-8 JSON documents with a small required envelope and named collections of
@@ -32,7 +32,9 @@ without forcing every lens or protocol into the same shape.
 ## Provenance
 
 A configuration loaded from disk records its resolved source path and SHA-256
-digest. These values can later be included in observation output to identify the
-exact configuration bytes used for a review.
+digest. The digest is carried into the assembled prompt and serialized review
+result, identifying the exact configuration bytes used for a review.
 
 See `proof_goblin/examples/restaurants.pgcfg` for a complete working bundle.
+Proof Goblin also ships a reusable documentation-focused bundle described in
+{doc}`documentation-review-configuration`.

@@ -1,4 +1,4 @@
-# Host application integration
+# Host Application Integration
 
 Proof Goblin is intended to be installed as a library. A host such as WBR owns
 artifact creation, execution scheduling, persistence, permissions, and

@@ -1,18 +1,20 @@
-# Development status
+# Development Status
 
-Proof Goblin is currently an experimental pure-Python project. The package
-structure names the first expected responsibilities, but the public API and
-configuration schema have not yet been implemented.
+Proof Goblin is an experimental but operational pure-Python library. It has no
+Django dependency and no database. Its implemented core includes configuration
+validation, deterministic prompt assembly, provider execution, structured
+observation validation, provenance, and JSON-compatible result serialization.
 
 The initial development milestones are:
 
 1. load and validate a `.pgcfg` configuration bundle (complete);
 2. resolve a named review and assemble an inspectable prompt (complete);
 3. send the review to a provider and parse structured observations (complete); and
-4. expose the workflow through a small command-line interface.
+4. expose the workflow through a small command-line interface (complete).
 
-The first milestones intentionally do not require an AI provider. Prompt
-assembly and configuration validation should be testable deterministically.
+Configuration loading and prompt assembly do not require an AI provider and are
+tested deterministically. Provider and reviewer tests use local test doubles;
+only the live example requires an API key and network access.
 
 ## Documentation conventions
 

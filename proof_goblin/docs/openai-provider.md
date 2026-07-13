@@ -1,4 +1,4 @@
-# OpenAI provider
+# OpenAI Provider
 
 Proof Goblin's first model provider uses OpenAI's Responses API and Structured
 Outputs. The adapter sends the assembled system and user portions separately and

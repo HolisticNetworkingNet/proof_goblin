@@ -42,3 +42,18 @@ python proof_goblin/examples/live_openai_review.py
 
 The live example uses `gpt-5.6` by default. Set `OPENAI_MODEL` to use a different
 compatible model.
+
+## Command line
+
+The installed `proof-goblin` command can inspect prompts without contacting a
+provider or execute a live OpenAI review:
+
+```bash
+proof-goblin prompt proof_goblin/docs/overview.md \
+  --config proof_goblin/configs/documentation.pgcfg \
+  --review technical_writer_first_pass
+
+proof-goblin review proof_goblin/docs/overview.md \
+  --config proof_goblin/configs/documentation.pgcfg \
+  --review technical_writer_first_pass
+```

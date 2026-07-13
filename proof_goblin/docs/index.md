@@ -14,16 +14,19 @@ versioned, and reproduced.
 
 overview
 concepts
+getting-started
+command-line-interface
 configuration
+documentation-review-configuration
 prompt-assembly
 openai-provider
 host-integration
-getting-started
 development
 ```
 
 ```{note}
-Proof Goblin is in its earliest stage of development. These pages describe the
-intended shape of the project; APIs and configuration formats are not yet
-stable.
+Proof Goblin is experimental, but its core review workflow is operational:
+configuration loading, prompt assembly, OpenAI execution, structured
+observations, and host-friendly result serialization are implemented. The
+public API and configuration schema may still evolve before a stable release.
 ```

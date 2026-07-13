@@ -14,6 +14,9 @@ dependencies = [
     "jsonschema>=4.23",
 ]
 
+[project.scripts]
+proof-goblin = "proof_goblin.cli:main"
+
 [project.optional-dependencies]
 docs = [
     "furo>=2024.8.6",
@@ -31,4 +34,4 @@ test = [
 include = ["proof_goblin*"]
 
 [tool.setuptools.package-data]
-proof_goblin = ["schemas/*.json"]
+proof_goblin = ["configs/*.pgcfg", "schemas/*.json"]

@@ -16,6 +16,7 @@ overview
 concepts
 configuration
 prompt-assembly
+openai-provider
 getting-started
 development
 ```

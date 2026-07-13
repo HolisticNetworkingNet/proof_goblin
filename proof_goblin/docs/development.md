@@ -8,7 +8,7 @@ The initial development milestones are:
 
 1. load and validate a `.pgcfg` configuration bundle (complete);
 2. resolve a named review and assemble an inspectable prompt (complete);
-3. send the review to a provider and parse structured observations; and
+3. send the review to a provider and parse structured observations (complete); and
 4. expose the workflow through a small command-line interface.
 
 The first milestones intentionally do not require an AI provider. Prompt

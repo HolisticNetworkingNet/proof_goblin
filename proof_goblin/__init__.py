@@ -19,6 +19,21 @@ from proof_goblin.config import (
     ConfigValidationError,
     ReviewDefinition,
 )
+from proof_goblin.observations import Observation, ReviewResult, TokenUsage
+from proof_goblin.providers import (
+    DEFAULT_OPENAI_MODEL,
+    OpenAIProvider,
+    Provider,
+    ProviderError,
+    ProviderQuotaError,
+    ProviderRateLimitError,
+    ProviderRefusalError,
+    ProviderRequestError,
+    ProviderResponse,
+    ProviderResponseError,
+    ProviderUnavailableError,
+)
+from proof_goblin.reviewer import ReviewError, Reviewer, ReviewOutputValidationError
 
 __all__ = [
     "CONFIG_FORMAT",
@@ -28,9 +43,26 @@ __all__ = [
     "ConfigError",
     "ConfigParseError",
     "ConfigValidationError",
+    "DEFAULT_OPENAI_MODEL",
+    "Observation",
+    "OpenAIProvider",
     "Prompt",
     "PromptBuildError",
     "PromptBuilder",
+    "Provider",
+    "ProviderError",
+    "ProviderQuotaError",
+    "ProviderRateLimitError",
+    "ProviderRefusalError",
+    "ProviderRequestError",
+    "ProviderResponse",
+    "ProviderResponseError",
+    "ProviderUnavailableError",
     "ResolvedReview",
+    "ReviewError",
     "ReviewDefinition",
+    "ReviewOutputValidationError",
+    "ReviewResult",
+    "Reviewer",
+    "TokenUsage",
 ]

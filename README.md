@@ -27,3 +27,18 @@ python -m sphinx -W --keep-going -b html proof_goblin/docs proof_goblin/docs/_bu
 ```
 
 Open `proof_goblin/docs/_build/html/index.html` to view the generated site.
+
+## OpenAI provider
+
+Install the optional OpenAI integration and set `OPENAI_API_KEY` in your
+environment:
+
+```bash
+python -m pip install -e ".[openai]"
+read -s "OPENAI_API_KEY?OpenAI API key: "
+export OPENAI_API_KEY
+python proof_goblin/examples/live_openai_review.py
+```
+
+The live example uses `gpt-5.6` by default. Set `OPENAI_MODEL` to use a different
+compatible model.

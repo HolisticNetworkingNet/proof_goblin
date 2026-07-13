@@ -47,13 +47,21 @@
   },
   "output_schemas": {
     "observation.v1": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["question", "evidence"],
-        "properties": {
-          "question": {"type": "string"},
-          "evidence": {"type": "string"}
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observations"],
+      "properties": {
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["question", "evidence"],
+            "properties": {
+              "question": {"type": "string"},
+              "evidence": {"type": "string"}
+            }
+          }
         }
       }
     }

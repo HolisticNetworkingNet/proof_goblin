@@ -28,7 +28,7 @@ def test_resolves_named_review(builder: PromptBuilder) -> None:
     assert resolved.lens["description"].startswith("A potential customer")
     assert resolved.mission["questions"]
     assert resolved.protocol["ask_questions"] is True
-    assert resolved.output_schema["type"] == "array"
+    assert resolved.output_schema["type"] == "object"
 
 
 def test_builds_prompt_with_separate_roles(builder: PromptBuilder) -> None:

@@ -10,12 +10,18 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "LicenseRef-Proprietary"
 license-files = ["LICENSE"]
+dependencies = [
+    "jsonschema>=4.23",
+]
 
 [project.optional-dependencies]
 docs = [
     "furo>=2024.8.6",
     "myst-parser>=4.0",
     "sphinx>=8.1",
+]
+openai = [
+    "openai>=2.0",
 ]
 test = [
     "pytest>=8.3",

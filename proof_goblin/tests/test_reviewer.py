@@ -62,6 +62,13 @@ def test_reviewer_returns_validated_observations() -> None:
 
     assert result.observations[0].question == "Where are the restaurant hours?"
     assert result.observations[0].evidence.startswith("No hours")
+    assert result.review.name == "homepage_first_pass"
+    assert result.review.title == "Restaurant Homepage Review"
+    assert result.review.description.startswith("Evaluates")
+    assert result.review.lens == "first_time_diner"
+    assert result.review.mission == "homepage_clarity"
+    assert result.review.protocol == "questions_only"
+    assert result.review.output_schema == "observation.v1"
     assert result.provider == "fake"
     assert result.model == "fake-model"
     assert result.response_id == "response-123"

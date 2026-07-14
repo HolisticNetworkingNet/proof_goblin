@@ -121,6 +121,11 @@ def test_review_command_prints_text_result(
 
     captured = capsys.readouterr()
     assert exit_code == 0
+    assert "Review: Restaurant Homepage Review" in captured.out
+    assert "Review ID: homepage_first_pass" in captured.out
+    assert "Description: Evaluates whether a first-time diner" in captured.out
+    assert "Lens: first_time_diner" in captured.out
+    assert "Mission: homepage_clarity" in captured.out
     assert "Provider: openai" in captured.out
     assert "Model: test-model" in captured.out
     assert "Response: resp_cli_test" in captured.out
@@ -153,6 +158,11 @@ def test_review_command_prints_serialized_json(
     payload = json.loads(captured.out)
     assert exit_code == 0
     assert payload["format"] == "proof-goblin-review-result"
+    assert payload["review"]["title"] == "Restaurant Homepage Review"
+    assert payload["review"]["lens"] == "first_time_diner"
+    assert payload["review"]["mission"] == "homepage_clarity"
+    assert payload["review"]["protocol"] == "questions_only"
+    assert payload["review"]["output_schema"] == "observation.v1"
     assert payload["observations"][0]["question"] == "Where are the opening hours?"
     assert payload["prompt"]["user"].endswith("--- END UNTRUSTED ARTIFACT ---")
 

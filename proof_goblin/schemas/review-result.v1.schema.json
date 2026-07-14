@@ -28,9 +28,23 @@
     "review": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name"],
+      "required": [
+        "name",
+        "title",
+        "description",
+        "lens",
+        "mission",
+        "protocol",
+        "output_schema"
+      ],
       "properties": {
-        "name": {"type": "string", "minLength": 1}
+        "name": {"type": "string", "minLength": 1},
+        "title": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "lens": {"type": "string", "minLength": 1},
+        "mission": {"type": "string", "minLength": 1},
+        "protocol": {"type": "string", "minLength": 1},
+        "output_schema": {"type": "string", "minLength": 1}
       }
     },
     "config": {

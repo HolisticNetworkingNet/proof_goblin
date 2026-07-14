@@ -35,11 +35,25 @@ class TokenUsage:
 
 
 @dataclass(frozen=True, slots=True)
+class ReviewAttribution:
+    """Stable and human-readable identity of the resolved review."""
+
+    name: str
+    title: str
+    description: str
+    lens: str
+    mission: str
+    protocol: str
+    output_schema: str
+
+
+@dataclass(frozen=True, slots=True)
 class ReviewResult:
     """Validated observations plus execution and input provenance."""
 
     observations: tuple[Observation, ...]
     prompt: Prompt
+    review: ReviewAttribution
     provider: str
     model: str
     response_id: str | None
@@ -50,6 +64,8 @@ class ReviewResult:
     def __post_init__(self) -> None:
         if self.created_at.tzinfo is None or self.created_at.utcoffset() is None:
             raise ValueError("created_at must include timezone information")
+        if self.review.name != self.prompt.review_name:
+            raise ValueError("review attribution must match prompt review name")
 
     def to_dict(self, *, include_prompt: bool = False) -> dict[str, Any]:
         """Return a versioned, JSON-compatible host-application record.
@@ -63,7 +79,13 @@ class ReviewResult:
             "schema_version": REVIEW_RESULT_SCHEMA_VERSION,
             "created_at": _format_datetime(self.created_at),
             "review": {
-                "name": self.prompt.review_name,
+                "name": self.review.name,
+                "title": self.review.title,
+                "description": self.review.description,
+                "lens": self.review.lens,
+                "mission": self.review.mission,
+                "protocol": self.review.protocol,
+                "output_schema": self.review.output_schema,
             },
             "config": {
                 "name": self.prompt.config_name,

@@ -24,6 +24,8 @@ def builder() -> PromptBuilder:
 def test_resolves_named_review(builder: PromptBuilder) -> None:
     resolved = builder.resolve("homepage_first_pass")
 
+    assert resolved.definition.title == "Restaurant Homepage Review"
+    assert resolved.definition.description.startswith("Evaluates")
     assert resolved.definition.lens == "first_time_diner"
     assert resolved.lens["description"].startswith("A potential customer")
     assert resolved.mission["questions"]

@@ -17,6 +17,10 @@ REVIEW_RESULT_FORMAT = "proof-goblin-review-result"
 REVIEW_RESULT_SCHEMA_VERSION = "1.0"
 
 
+class ReviewResultProvenanceError(ValueError):
+    """Raised when a serialized result does not match its supplied prompt."""
+
+
 @dataclass(frozen=True, slots=True)
 class Observation:
     """A question and the artifact evidence that prompted it."""
@@ -162,6 +166,12 @@ class ReviewResult:
         execution_record = _require_mapping(record, "execution")
         usage_record = _require_mapping(execution_record, "usage")
 
+        cached_review_name = review_record.get("name")
+        if cached_review_name != prompt.review_name:
+            raise ReviewResultProvenanceError(
+                "cached review.name does not match current prompt"
+            )
+
         expected_provenance = {
             "config.name": (config_record.get("name"), prompt.config_name),
             "config.version": (config_record.get("version"), prompt.config_version),
@@ -178,7 +188,9 @@ class ReviewResult:
         }
         for field_name, (cached_value, prompt_value) in expected_provenance.items():
             if cached_value != prompt_value:
-                raise ValueError(f"cached {field_name} does not match current prompt")
+                raise ReviewResultProvenanceError(
+                    f"cached {field_name} does not match current prompt"
+                )
 
         observation_records = record.get("observations")
         if not isinstance(observation_records, list):

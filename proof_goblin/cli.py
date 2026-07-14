@@ -271,8 +271,10 @@ def _resolve_report_format(
     try:
         return _FORMAT_EXTENSIONS[suffix]
     except KeyError as exc:
+        supported_extensions = ", ".join(_FORMAT_EXTENSIONS)
         raise CliError(
-            f"could not infer report format from {output_value!r}; use --format"
+            f"unsupported output extension {suffix!r} in {output_value!r}; "
+            f"use one of: {supported_extensions}"
         ) from exc
 
 

@@ -80,7 +80,9 @@ colors.
 
 Artifact-derived and model-derived values are HTML-escaped before they enter the
 report. This prevents embedded HTML from becoming active when the Markdown is
-rendered by a system that permits raw HTML.
+rendered by a system that permits raw HTML. Link delimiters are encoded so
+untrusted values cannot introduce active links or remote images; safe inline
+code remains available for identifiers such as configuration filenames.
 
 ## Standalone HTML
 

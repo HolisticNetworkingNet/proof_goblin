@@ -148,6 +148,37 @@ def test_markdown_report_is_structured_and_excludes_artifact_content() -> None:
     assert result.prompt.artifact_sha256 not in rendered
 
 
+def test_markdown_report_neutralizes_links_and_images_from_untrusted_values() -> None:
+    result = make_result()
+    result = replace(
+        result,
+        review=replace(
+            result.review,
+            title="[Linked review](https://example.com)",
+            description="![Remote image](https://example.com/tracker.png)",
+        ),
+        observations=(
+            Observation(
+                question="Could [this link][reference] load?",
+                evidence=(
+                    "The `.pgcfg` mentions ![another image](https://example.com/x).\n"
+                    "[reference]: https://example.com"
+                ),
+            ),
+        ),
+    )
+
+    rendered = render_report(result, ReportFormat.MARKDOWN)
+
+    assert "[Linked review](" not in rendered
+    assert "![Remote image](" not in rendered
+    assert "[this link][reference]" not in rendered
+    assert "![another image](" not in rendered
+    assert "&#91;Linked review&#93;" in rendered
+    assert "&#91;reference&#93;" in rendered
+    assert "The `.pgcfg` mentions" in rendered
+
+
 def test_html_report_is_standalone_and_escapes_untrusted_values() -> None:
     result = make_result()
     result = replace(

@@ -434,7 +434,9 @@ def test_review_rejects_unknown_output_extension_before_execution(
     captured = capsys.readouterr()
     assert exit_code == 1
     assert captured.out == ""
-    assert "could not infer report format" in captured.err
+    assert "unsupported output extension '.report'" in captured.err
+    assert "use one of: .txt, .text, .json, .md" in captured.err
+    assert "--format" not in captured.err
 
 
 @pytest.mark.parametrize(

@@ -25,6 +25,7 @@ from proof_goblin.observations import (
     Observation,
     ReviewAttribution,
     ReviewResult,
+    ReviewResultProvenanceError,
     TokenUsage,
 )
 from proof_goblin.providers import (
@@ -89,6 +90,7 @@ __all__ = [
     "ReviewDefinition",
     "ReviewOutputValidationError",
     "ReviewResult",
+    "ReviewResultProvenanceError",
     "Reviewer",
     "TextReportRenderer",
     "TokenUsage",

@@ -171,8 +171,17 @@ def test_compatible_version_one_cache_entry_remains_reusable(tmp_path: Path) -> 
     assert loaded.to_dict() == result.to_dict()
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("config_name", "different_config"),
+        ("review_name", "different_review"),
+    ],
+)
 def test_colliding_version_one_provenance_is_treated_as_cache_miss(
     tmp_path: Path,
+    field: str,
+    value: str,
 ) -> None:
     cache = ReviewCache(tmp_path)
     result = make_result()
@@ -186,7 +195,7 @@ def test_colliding_version_one_provenance_is_treated_as_cache_miss(
         result.to_json(),
         encoding="utf-8",
     )
-    changed_prompt = replace(result.prompt, config_name="different_config")
+    changed_prompt = replace(result.prompt, **{field: value})
     current_key = cache.key_for(
         changed_prompt,
         provider="openai",
@@ -201,6 +210,30 @@ def test_colliding_version_one_provenance_is_treated_as_cache_miss(
     )
 
     assert loaded is None
+
+
+def test_corrupt_version_one_cache_entry_requires_explicit_refresh(
+    tmp_path: Path,
+) -> None:
+    cache = ReviewCache(tmp_path)
+    prompt = make_prompt()
+    model = "model-a"
+    legacy_key = cache._legacy_key_for(
+        prompt,
+        provider="openai",
+        model=model,
+    )
+    tmp_path.mkdir(exist_ok=True)
+    (tmp_path / f"{legacy_key}.json").write_text("not json", encoding="utf-8")
+    current_key = cache.key_for(prompt, provider="openai", model=model)
+
+    with pytest.raises(ReviewCacheError, match="--refresh"):
+        cache.load(
+            current_key,
+            prompt=prompt,
+            provider="openai",
+            model=model,
+        )
 
 
 def test_reservation_blocks_an_identical_concurrent_request(tmp_path: Path) -> None:

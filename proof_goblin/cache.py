@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Iterator
 
 from proof_goblin.builder import Prompt
-from proof_goblin.observations import ReviewResult
+from proof_goblin.observations import ReviewResult, ReviewResultProvenanceError
 
 
 CACHE_KEY_VERSION = "2"
@@ -111,11 +111,15 @@ class ReviewCache:
                 if result.provider != provider:
                     raise ValueError("cached provider does not match request")
                 return result
-            except (json.JSONDecodeError, ValueError) as exc:
+            except ReviewResultProvenanceError as exc:
                 if is_legacy:
                     # Version 1 omitted provenance from its key. A mismatch is
                     # therefore a safe cache miss rather than corruption.
                     continue
+                raise ReviewCacheError(
+                    f"cached review {path} is invalid; rerun with --refresh: {exc}"
+                ) from exc
+            except (json.JSONDecodeError, ValueError) as exc:
                 raise ReviewCacheError(
                     f"cached review {path} is invalid; rerun with --refresh: {exc}"
                 ) from exc

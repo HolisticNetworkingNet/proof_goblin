@@ -296,17 +296,25 @@ def _display_value(value: object | None) -> str:
 
 
 def _markdown_inline(value: str) -> str:
-    return html.escape(" ".join(value.splitlines()), quote=False)
+    return _neutralize_markdown_links(
+        html.escape(" ".join(value.splitlines()), quote=False)
+    )
 
 
 def _markdown_code(value: str) -> str:
-    escaped = _markdown_inline(value).replace("|", "&#124;")
+    escaped = html.escape(" ".join(value.splitlines()), quote=False).replace(
+        "|", "&#124;"
+    )
     return f"`{escaped.replace('`', '&#96;')}`"
 
 
 def _markdown_quote(value: str) -> str:
-    escaped = html.escape(value, quote=False)
+    escaped = _neutralize_markdown_links(html.escape(value, quote=False))
     return "\n".join(f"> {line}" if line else ">" for line in escaped.splitlines())
+
+
+def _neutralize_markdown_links(value: str) -> str:
+    return value.replace("[", "&#91;").replace("]", "&#93;")
 
 
 def _html(value: str) -> str:

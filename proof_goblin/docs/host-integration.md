@@ -50,6 +50,26 @@ For text storage or transport:
 payload_json = result.to_json()
 ```
 
+## Report rendering
+
+Hosts can render distributable reports from an existing result without using
+the CLI or contacting a provider:
+
+```python
+from proof_goblin import ReportFormat, render_report
+
+markdown_report = render_report(result, ReportFormat.MARKDOWN)
+html_report = render_report(result, ReportFormat.HTML)
+```
+
+The renderer boundary supports plain text, canonical JSON, Markdown, and
+standalone HTML. Concrete renderers also implement the public `ReportRenderer`
+protocol when a host prefers dependency injection over format dispatch.
+
+Human-facing renderers include review, artifact, and execution attribution but
+exclude prompt text and artifact content. See {doc}`report-formats` for the
+complete format contract.
+
 ## Prompt retention
 
 Prompt text is excluded by default because the user portion contains the entire

@@ -130,6 +130,23 @@ def test_to_json_round_trips_to_the_same_record() -> None:
     assert json.loads(result.to_json()) == result.to_dict()
 
 
+def test_from_dict_reconstructs_result_with_verified_prompt() -> None:
+    result = make_result()
+
+    reconstructed = ReviewResult.from_dict(result.to_dict(), prompt=result.prompt)
+
+    assert reconstructed.to_dict() == result.to_dict()
+    assert reconstructed.prompt is result.prompt
+
+
+def test_from_dict_rejects_mismatched_prompt_provenance() -> None:
+    result = make_result()
+    different_prompt = replace(result.prompt, artifact_sha256="0" * 64)
+
+    with pytest.raises(ValueError, match="artifact.sha256"):
+        ReviewResult.from_dict(result.to_dict(), prompt=different_prompt)
+
+
 def test_result_requires_timezone_aware_creation_time() -> None:
     result = make_result()
 

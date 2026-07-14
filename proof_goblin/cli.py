@@ -9,16 +9,22 @@ import argparse
 import mimetypes
 import os
 import sys
+import tempfile
 from pathlib import Path
-from typing import Sequence, TextIO
+from typing import Sequence
 
 from proof_goblin.builder import PromptBuildError, PromptBuilder
+from proof_goblin.cache import ReviewCache, ReviewCacheError
 from proof_goblin.config import Config, ConfigError
-from proof_goblin.observations import ReviewResult
 from proof_goblin.providers import (
     DEFAULT_OPENAI_MODEL,
     OpenAIProvider,
     ProviderError,
+)
+from proof_goblin.reports import (
+    ReportFormat,
+    ReportRenderError,
+    render_report,
 )
 from proof_goblin.reviewer import ReviewError, Reviewer
 
@@ -40,6 +46,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         ConfigError,
         PromptBuildError,
         ProviderError,
+        ReviewCacheError,
+        ReportRenderError,
         ReviewError,
     ) as exc:
         print(f"proof-goblin: error: {exc}", file=sys.stderr)
@@ -74,15 +82,29 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     review_parser.add_argument(
+        "--format",
+        choices=tuple(item.value for item in ReportFormat),
+        help=(
+            "standard output format (default: text; file formats are inferred "
+            "from --output extensions)"
+        ),
+    )
+    review_parser.add_argument(
+        "-o",
         "--output",
-        choices=("text", "json"),
-        default="text",
-        help="result output format (default: text)",
+        action="append",
+        metavar="PATH",
+        help="write a report inferred from PATH; may be repeated",
     )
     review_parser.add_argument(
         "--include-prompt",
         action="store_true",
         help="include prompt text in JSON output",
+    )
+    review_parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="contact the provider and replace any matching cached result",
     )
     review_parser.set_defaults(handler=_review_command)
 
@@ -129,22 +151,73 @@ def _prompt_command(args: argparse.Namespace) -> int:
 
 
 def _review_command(args: argparse.Namespace) -> int:
-    if args.include_prompt and args.output != "json":
-        raise CliError("--include-prompt requires --output json")
+    outputs = _resolve_outputs(args.format, args.output)
+    if args.include_prompt and not any(
+        report_format is ReportFormat.JSON for _, report_format in outputs
+    ):
+        raise CliError("--include-prompt requires JSON output")
 
     config, artifact, artifact_name, media_type = _load_inputs(args)
-    result = Reviewer(OpenAIProvider(model=args.model)).review(
-        config=config,
+    prompt = PromptBuilder(config).build(
         review=args.review,
         artifact=artifact,
         artifact_name=artifact_name,
         artifact_media_type=media_type,
     )
+    cache = ReviewCache()
+    cache_key = cache.key_for(prompt, provider="openai", model=args.model)
+    result = (
+        None
+        if args.refresh
+        else cache.load(
+            cache_key,
+            prompt=prompt,
+            provider="openai",
+            model=args.model,
+        )
+    )
+    if result is None:
+        with cache.reserve(cache_key):
+            if not args.refresh:
+                result = cache.load(
+                    cache_key,
+                    prompt=prompt,
+                    provider="openai",
+                    model=args.model,
+                )
+            if result is None:
+                result = Reviewer(OpenAIProvider(model=args.model)).review(
+                    config=config,
+                    review=args.review,
+                    artifact=artifact,
+                    artifact_name=artifact_name,
+                    artifact_media_type=media_type,
+                )
+                cache.store(
+                    cache_key,
+                    result,
+                    request_provider="openai",
+                    request_model=args.model,
+                )
 
-    if args.output == "json":
-        print(result.to_json(include_prompt=args.include_prompt))
-    else:
-        _print_text_result(result, sys.stdout)
+    rendered_outputs = [
+        (
+            path,
+            render_report(
+                result,
+                report_format,
+                include_prompt=(
+                    args.include_prompt and report_format is ReportFormat.JSON
+                ),
+            ),
+        )
+        for path, report_format in outputs
+    ]
+    for path, rendered in rendered_outputs:
+        if path is None:
+            sys.stdout.write(rendered)
+        else:
+            _write_report(path, rendered)
     return 0
 
 
@@ -175,16 +248,76 @@ def _guess_media_type(artifact_name: str) -> str:
     return media_type or "text/plain"
 
 
-def _print_text_result(result: ReviewResult, stream: TextIO) -> None:
-    print(f"Review: {result.review.title}", file=stream)
-    print(f"Review ID: {result.review.name}", file=stream)
-    print(f"Description: {result.review.description}", file=stream)
-    print(f"Lens: {result.review.lens}", file=stream)
-    print(f"Mission: {result.review.mission}", file=stream)
-    print(f"Provider: {result.provider}", file=stream)
-    print(f"Model: {result.model}", file=stream)
-    print(f"Response: {result.response_id or '-'}", file=stream)
-    print(f"Observations: {len(result.observations)}", file=stream)
-    for index, observation in enumerate(result.observations, start=1):
-        print(f"\n{index}. {observation.question}", file=stream)
-        print(f"   Evidence: {observation.evidence}", file=stream)
+_FORMAT_EXTENSIONS = {
+    ".txt": ReportFormat.TEXT,
+    ".text": ReportFormat.TEXT,
+    ".json": ReportFormat.JSON,
+    ".md": ReportFormat.MARKDOWN,
+    ".markdown": ReportFormat.MARKDOWN,
+    ".html": ReportFormat.HTML,
+    ".htm": ReportFormat.HTML,
+}
+
+
+def _resolve_report_format(
+    format_value: str | None,
+    output_value: str | None,
+) -> ReportFormat:
+    if format_value:
+        return ReportFormat(format_value)
+    if not output_value:
+        return ReportFormat.TEXT
+    suffix = Path(output_value).suffix.lower()
+    try:
+        return _FORMAT_EXTENSIONS[suffix]
+    except KeyError as exc:
+        supported_extensions = ", ".join(_FORMAT_EXTENSIONS)
+        raise CliError(
+            f"unsupported output extension {suffix!r} in {output_value!r}; "
+            f"use one of: {supported_extensions}"
+        ) from exc
+
+
+def _resolve_outputs(
+    format_value: str | None,
+    output_values: list[str] | None,
+) -> tuple[tuple[Path | None, ReportFormat], ...]:
+    if not output_values:
+        return ((None, _resolve_report_format(format_value, None)),)
+    if format_value:
+        raise CliError("--format cannot be combined with --output; use file extensions")
+
+    paths = tuple(Path(value) for value in output_values)
+    if len(set(paths)) != len(paths):
+        raise CliError("each --output path must be unique")
+    return tuple((path, _resolve_report_format(None, str(path))) for path in paths)
+
+
+def _write_report(path: Path, content: str) -> None:
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="\n",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            temporary.write(content)
+            temporary.flush()
+            os.fsync(temporary.fileno())
+
+        assert temporary_path is not None
+        if path.exists():
+            temporary_path.chmod(path.stat().st_mode & 0o777)
+        os.replace(temporary_path, path)
+    except (OSError, UnicodeError) as exc:
+        if temporary_path is not None:
+            try:
+                temporary_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise CliError(f"could not write report to {path}: {exc}") from exc

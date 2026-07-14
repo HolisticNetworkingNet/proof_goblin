@@ -20,6 +20,7 @@ configuration
 documentation-review-configuration
 prompt-assembly
 openai-provider
+report-formats
 host-integration
 development
 ```

@@ -121,11 +121,13 @@ def test_review_command_prints_text_result(
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "Review: Restaurant Homepage Review" in captured.out
+    assert captured.out.startswith("Restaurant Homepage Review\n")
     assert "Review ID: homepage_first_pass" in captured.out
-    assert "Description: Evaluates whether a first-time diner" in captured.out
-    assert "Lens: first_time_diner" in captured.out
+    assert "Evaluates whether a first-time diner" in captured.out
+    assert "Proof Lens: first_time_diner" in captured.out
     assert "Mission: homepage_clarity" in captured.out
+    assert "Artifact: homepage.html" in captured.out
+    assert "Created:" in captured.out
     assert "Provider: openai" in captured.out
     assert "Model: test-model" in captured.out
     assert "Response: resp_cli_test" in captured.out
@@ -148,7 +150,7 @@ def test_review_command_prints_serialized_json(
             str(EXAMPLE_CONFIG),
             "--review",
             "homepage_first_pass",
-            "--output",
+            "--format",
             "json",
             "--include-prompt",
         ]
@@ -186,7 +188,146 @@ def test_review_rejects_prompt_in_text_output(
     captured = capsys.readouterr()
     assert exit_code == 1
     assert captured.out == ""
-    assert "--include-prompt requires --output json" in captured.err
+    assert "--include-prompt requires --format json" in captured.err
+
+
+def test_review_command_writes_inferred_markdown_file(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+    output_path = artifact_path.with_name("review.md")
+
+    exit_code = cli.main(
+        [
+            "review",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--artifact-name",
+            "café-homepage.html",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert captured.out == ""
+    assert captured.err == ""
+    rendered = output_path.read_text(encoding="utf-8")
+    assert rendered.startswith("# Restaurant Homepage Review\n")
+    assert "`café-homepage.html`" in rendered
+    assert "### Observation 1" in rendered
+
+
+def test_explicit_format_overrides_output_extension(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+    output_path = artifact_path.with_name("review.md")
+
+    exit_code = cli.main(
+        [
+            "review",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--format",
+            "html",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert captured.out == ""
+    assert output_path.read_text(encoding="utf-8").startswith("<!doctype html>")
+
+
+def test_review_rejects_unknown_output_extension_before_execution(
+    artifact_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = cli.main(
+        [
+            "review",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--output",
+            str(artifact_path.with_name("review.report")),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert captured.out == ""
+    assert "could not infer report format" in captured.err
+
+
+@pytest.mark.parametrize(
+    ("extension", "expected"),
+    [
+        (".txt", cli.ReportFormat.TEXT),
+        (".text", cli.ReportFormat.TEXT),
+        (".json", cli.ReportFormat.JSON),
+        (".md", cli.ReportFormat.MARKDOWN),
+        (".markdown", cli.ReportFormat.MARKDOWN),
+        (".html", cli.ReportFormat.HTML),
+        (".htm", cli.ReportFormat.HTML),
+    ],
+)
+def test_report_format_is_inferred_from_recognized_extension(
+    extension: str,
+    expected: cli.ReportFormat,
+) -> None:
+    assert cli._resolve_report_format(None, f"review{extension}") is expected
+
+
+def test_failed_atomic_write_preserves_existing_report(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+    output_path = artifact_path.with_name("review.txt")
+    output_path.write_text("existing report\n", encoding="utf-8")
+
+    def fail_replace(source: object, destination: object) -> None:
+        raise OSError("simulated replacement failure")
+
+    monkeypatch.setattr(cli.os, "replace", fail_replace)
+
+    exit_code = cli.main(
+        [
+            "review",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert captured.out == ""
+    assert "could not write report" in captured.err
+    assert output_path.read_text(encoding="utf-8") == "existing report\n"
+    assert not list(output_path.parent.glob(f".{output_path.name}.*.tmp"))
 
 
 def test_cli_reports_missing_artifact(

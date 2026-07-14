@@ -40,6 +40,16 @@ from proof_goblin.providers import (
     ProviderResponseError,
     ProviderUnavailableError,
 )
+from proof_goblin.reports import (
+    HtmlReportRenderer,
+    JsonReportRenderer,
+    MarkdownReportRenderer,
+    ReportFormat,
+    ReportRenderError,
+    ReportRenderer,
+    TextReportRenderer,
+    render_report,
+)
 from proof_goblin.reviewer import ReviewError, Reviewer, ReviewOutputValidationError
 
 __all__ = [
@@ -51,6 +61,9 @@ __all__ = [
     "ConfigParseError",
     "ConfigValidationError",
     "DEFAULT_OPENAI_MODEL",
+    "HtmlReportRenderer",
+    "JsonReportRenderer",
+    "MarkdownReportRenderer",
     "Observation",
     "OpenAIProvider",
     "Prompt",
@@ -65,14 +78,19 @@ __all__ = [
     "ProviderResponse",
     "ProviderResponseError",
     "ProviderUnavailableError",
-    "ResolvedReview",
     "REVIEW_RESULT_FORMAT",
     "REVIEW_RESULT_SCHEMA_VERSION",
+    "ReportFormat",
+    "ReportRenderError",
+    "ReportRenderer",
+    "ResolvedReview",
     "ReviewError",
     "ReviewAttribution",
     "ReviewDefinition",
     "ReviewOutputValidationError",
     "ReviewResult",
     "Reviewer",
+    "TextReportRenderer",
     "TokenUsage",
+    "render_report",
 ]

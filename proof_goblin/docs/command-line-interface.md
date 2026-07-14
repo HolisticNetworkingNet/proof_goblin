@@ -31,28 +31,71 @@ proof-goblin review proof_goblin/docs/overview.md \
   --review technical_writer_first_pass
 ```
 
-The command prints the review title and description, its stable identifier,
-resolved lens and mission, provider metadata, and then numbered observations
-with their evidence. The title is intended for readers; the identifier remains
-visible so a run can be traced back to the exact named review. Use `--model` to
-override `OPENAI_MODEL` or the package default.
+The command prints a plain-text report to standard output by default. It
+includes the review title and description, stable identifier, resolved
+components, artifact identity, creation time, provider metadata, and numbered
+observations with their evidence. Use `--model` to override `OPENAI_MODEL` or
+the package default.
 
-## JSON Output
+## Report formats
 
-Use JSON when another process or host application will consume the result:
+Select plain text, JSON, Markdown, or standalone HTML with `--format`:
 
 ```bash
 proof-goblin review proof_goblin/docs/overview.md \
   --config proof_goblin/configs/documentation.pgcfg \
   --review technical_writer_first_pass \
-  --output json
+  --format markdown
 ```
 
-The output uses the same versioned record returned by `ReviewResult.to_json()`.
-Its `review` object includes the stable identifier, human-readable title and
-description, and resolved lens, mission, protocol, and output-schema names.
-Prompt text is omitted by default because it contains the complete artifact.
-Add `--include-prompt` when an explicit archival policy requires it.
+The supported values are:
+
+- `text` for terminal-oriented reports;
+- `json` for the canonical versioned `ReviewResult` record;
+- `markdown` for repositories, documentation systems, and editing; and
+- `html` for a safely escaped, self-contained browser document.
+
+See {doc}`report-formats` for their content and security properties.
+
+## File output
+
+Use `--output` to write the complete report to a UTF-8 file instead of standard
+output:
+
+```bash
+proof-goblin review proof_goblin/docs/overview.md \
+  --config proof_goblin/configs/documentation.pgcfg \
+  --review technical_writer_first_pass \
+  --format markdown \
+  --output technical-writing-review.md
+```
+
+When `--format` is omitted, Proof Goblin recognizes `.txt`, `.text`, `.json`,
+`.md`, `.markdown`, `.html`, and `.htm`. An unrecognized extension produces an
+error and requires an explicit format. An explicit `--format` always wins,
+regardless of the output filename.
+
+File writes replace the destination atomically after the complete report has
+been encoded and flushed. A failed write reports an error and does not replace
+an existing report with partial output.
+
+## JSON prompt retention
+
+JSON output uses the same versioned record returned by
+`ReviewResult.to_json()`. Prompt text is omitted by default because the user
+prompt contains the complete artifact. Add `--include-prompt` together with
+`--format json` only when an explicit archival policy requires it:
+
+```bash
+proof-goblin review artifact.md \
+  --config review.pgcfg \
+  --review first_pass \
+  --format json \
+  --include-prompt \
+  --output review.json
+```
+
+Text, Markdown, and HTML reports never include prompt text or artifact content.
 
 ## Standard Input
 

@@ -23,6 +23,7 @@ class FakeProvider:
     """Return a deterministic response without contacting OpenAI."""
 
     calls = 0
+    response_model: str | None = None
 
     def __init__(self, *, model: str) -> None:
         self.model = model
@@ -39,7 +40,7 @@ class FakeProvider:
                 ]
             },
             provider="openai",
-            model=self.model,
+            model=self.response_model or self.model,
             response_id="resp_cli_test",
             usage=TokenUsage(input_tokens=50, output_tokens=20, total_tokens=70),
         )
@@ -59,6 +60,7 @@ def isolated_review_cache(
 ) -> None:
     monkeypatch.setenv("PROOF_GOBLIN_CACHE_DIR", str(tmp_path / "cache"))
     FakeProvider.calls = 0
+    FakeProvider.response_model = None
 
 
 def test_prompt_command_prints_assembled_prompt(
@@ -333,6 +335,33 @@ def test_review_reuses_cached_result_for_later_format(
     assert FakeProvider.calls == 1
     assert "resp_cli_test" in markdown_path.read_text(encoding="utf-8")
     assert "resp_cli_test" in html_path.read_text(encoding="utf-8")
+
+
+def test_review_caches_resolved_provider_model_under_requested_model(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+    FakeProvider.response_model = "test-model-2026-07-14"
+    output_path = artifact_path.with_name("review.txt")
+    arguments = [
+        "review",
+        str(artifact_path),
+        "--config",
+        str(EXAMPLE_CONFIG),
+        "--review",
+        "homepage_first_pass",
+        "--model",
+        "test-model",
+        "--output",
+        str(output_path),
+    ]
+
+    assert cli.main(arguments) == 0
+    assert cli.main(arguments) == 0
+
+    assert FakeProvider.calls == 1
+    assert "Model: test-model-2026-07-14" in output_path.read_text(encoding="utf-8")
 
 
 def test_refresh_replaces_matching_cached_result(

@@ -21,7 +21,7 @@ from proof_goblin.builder import Prompt
 from proof_goblin.observations import ReviewResult
 
 
-CACHE_KEY_VERSION = "1"
+CACHE_KEY_VERSION = "2"
 CACHE_DIRECTORY_ENV = "PROOF_GOBLIN_CACHE_DIR"
 STALE_LOCK_AGE = timedelta(minutes=15)
 
@@ -45,7 +45,18 @@ class ReviewCache:
             "model": model,
             "system": prompt.system,
             "user": prompt.user,
+            "review_name": prompt.review_name,
+            "config_name": prompt.config_name,
+            "config_version": prompt.config_version,
+            "config_sha256": prompt.config_sha256,
+            "artifact_name": prompt.artifact_name,
+            "artifact_media_type": prompt.artifact_media_type,
+            "artifact_sha256": prompt.artifact_sha256,
         }
+        return self._hash_identity(identity)
+
+    @staticmethod
+    def _hash_identity(identity: dict[str, str | None]) -> str:
         encoded = json.dumps(
             identity,
             ensure_ascii=False,
@@ -53,6 +64,17 @@ class ReviewCache:
             separators=(",", ":"),
         ).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
+
+    def _legacy_key_for(self, prompt: Prompt, *, provider: str, model: str) -> str:
+        return self._hash_identity(
+            {
+                "version": "1",
+                "provider": provider,
+                "model": model,
+                "system": prompt.system,
+                "user": prompt.user,
+            }
+        )
 
     def load(
         self,
@@ -66,37 +88,58 @@ class ReviewCache:
 
         if key != self.key_for(prompt, provider=provider, model=model):
             raise ReviewCacheError("review cache key does not match request identity")
-        path = self._result_path(key)
-        try:
-            serialized = path.read_text(encoding="utf-8")
-        except FileNotFoundError:
-            return None
-        except (OSError, UnicodeError) as exc:
-            raise ReviewCacheError(f"could not read review cache {path}: {exc}") from exc
+        legacy_key = self._legacy_key_for(prompt, provider=provider, model=model)
+        candidates = ((self._result_path(key), False),)
+        if legacy_key != key:
+            candidates += ((self._result_path(legacy_key), True),)
 
-        try:
-            record = json.loads(serialized)
-            if not isinstance(record, dict):
-                raise ValueError("cached result must be an object")
-            result = ReviewResult.from_dict(record, prompt=prompt)
-            if result.provider != provider or result.model != model:
-                raise ValueError("cached provider or model does not match request")
-            return result
-        except (json.JSONDecodeError, ValueError) as exc:
-            raise ReviewCacheError(
-                f"cached review {path} is invalid; rerun with --refresh: {exc}"
-            ) from exc
+        for path, is_legacy in candidates:
+            try:
+                serialized = path.read_text(encoding="utf-8")
+            except FileNotFoundError:
+                continue
+            except (OSError, UnicodeError) as exc:
+                raise ReviewCacheError(
+                    f"could not read review cache {path}: {exc}"
+                ) from exc
 
-    def store(self, key: str, result: ReviewResult) -> None:
+            try:
+                record = json.loads(serialized)
+                if not isinstance(record, dict):
+                    raise ValueError("cached result must be an object")
+                result = ReviewResult.from_dict(record, prompt=prompt)
+                if result.provider != provider:
+                    raise ValueError("cached provider does not match request")
+                return result
+            except (json.JSONDecodeError, ValueError) as exc:
+                if is_legacy:
+                    # Version 1 omitted provenance from its key. A mismatch is
+                    # therefore a safe cache miss rather than corruption.
+                    continue
+                raise ReviewCacheError(
+                    f"cached review {path} is invalid; rerun with --refresh: {exc}"
+                ) from exc
+        return None
+
+    def store(
+        self,
+        key: str,
+        result: ReviewResult,
+        *,
+        request_provider: str,
+        request_model: str,
+    ) -> None:
         """Atomically store a canonical result without prompt text."""
 
         expected_key = self.key_for(
             result.prompt,
-            provider=result.provider,
-            model=result.model,
+            provider=request_provider,
+            model=request_model,
         )
         if key != expected_key:
-            raise ReviewCacheError("review cache key does not match result identity")
+            raise ReviewCacheError("review cache key does not match request identity")
+        if result.provider != request_provider:
+            raise ReviewCacheError("response provider does not match request provider")
         self._prepare_directory()
         path = self._result_path(key)
         temporary_path: Path | None = None

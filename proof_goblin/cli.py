@@ -193,7 +193,12 @@ def _review_command(args: argparse.Namespace) -> int:
                     artifact_name=artifact_name,
                     artifact_media_type=media_type,
                 )
-                cache.store(cache_key, result)
+                cache.store(
+                    cache_key,
+                    result,
+                    request_provider="openai",
+                    request_model=args.model,
+                )
 
     rendered_outputs = [
         (

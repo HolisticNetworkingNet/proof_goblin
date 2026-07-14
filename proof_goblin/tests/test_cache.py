@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -46,12 +47,47 @@ def test_cache_key_changes_with_model_or_prompt(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("review_name", "different_review"),
+        ("config_name", "different_config"),
+        ("config_version", "2.0.0"),
+        ("config_sha256", "0" * 64),
+        ("artifact_name", "different.md"),
+        ("artifact_media_type", "text/plain"),
+        ("artifact_sha256", "0" * 64),
+    ],
+)
+def test_cache_key_includes_prompt_provenance(
+    tmp_path: Path,
+    field: str,
+    value: str,
+) -> None:
+    cache = ReviewCache(tmp_path)
+    prompt = make_prompt()
+    baseline = cache.key_for(prompt, provider="openai", model="model-a")
+
+    changed_prompt = replace(prompt, **{field: value})
+
+    assert baseline != cache.key_for(
+        changed_prompt,
+        provider="openai",
+        model="model-a",
+    )
+
+
 def test_cache_round_trip_uses_private_files(tmp_path: Path) -> None:
     cache = ReviewCache(tmp_path / "cache")
     result = make_result()
     key = cache.key_for(result.prompt, provider="openai", model=result.model)
 
-    cache.store(key, result)
+    cache.store(
+        key,
+        result,
+        request_provider="openai",
+        request_model=result.model,
+    )
     loaded = cache.load(
         key,
         prompt=result.prompt,
@@ -65,6 +101,35 @@ def test_cache_round_trip_uses_private_files(tmp_path: Path) -> None:
     assert (tmp_path / "cache" / f"{key}.json").stat().st_mode & 0o777 == 0o600
 
 
+def test_cache_distinguishes_requested_model_from_resolved_response_model(
+    tmp_path: Path,
+) -> None:
+    cache = ReviewCache(tmp_path / "cache")
+    result = make_result()
+    requested_model = "gpt-model-alias"
+    key = cache.key_for(
+        result.prompt,
+        provider="openai",
+        model=requested_model,
+    )
+
+    cache.store(
+        key,
+        result,
+        request_provider="openai",
+        request_model=requested_model,
+    )
+    loaded = cache.load(
+        key,
+        prompt=result.prompt,
+        provider="openai",
+        model=requested_model,
+    )
+
+    assert loaded is not None
+    assert loaded.model == result.model
+
+
 def test_invalid_cache_requires_explicit_refresh(tmp_path: Path) -> None:
     cache = ReviewCache(tmp_path)
     prompt = make_prompt()
@@ -74,6 +139,68 @@ def test_invalid_cache_requires_explicit_refresh(tmp_path: Path) -> None:
 
     with pytest.raises(ReviewCacheError, match="--refresh"):
         cache.load(key, prompt=prompt, provider="openai", model="model-a")
+
+
+def test_compatible_version_one_cache_entry_remains_reusable(tmp_path: Path) -> None:
+    cache = ReviewCache(tmp_path)
+    result = make_result()
+    legacy_key = cache._legacy_key_for(
+        result.prompt,
+        provider="openai",
+        model=result.model,
+    )
+    tmp_path.mkdir(exist_ok=True)
+    (tmp_path / f"{legacy_key}.json").write_text(
+        result.to_json(),
+        encoding="utf-8",
+    )
+    current_key = cache.key_for(
+        result.prompt,
+        provider="openai",
+        model=result.model,
+    )
+
+    loaded = cache.load(
+        current_key,
+        prompt=result.prompt,
+        provider="openai",
+        model=result.model,
+    )
+
+    assert loaded is not None
+    assert loaded.to_dict() == result.to_dict()
+
+
+def test_colliding_version_one_provenance_is_treated_as_cache_miss(
+    tmp_path: Path,
+) -> None:
+    cache = ReviewCache(tmp_path)
+    result = make_result()
+    legacy_key = cache._legacy_key_for(
+        result.prompt,
+        provider="openai",
+        model=result.model,
+    )
+    tmp_path.mkdir(exist_ok=True)
+    (tmp_path / f"{legacy_key}.json").write_text(
+        result.to_json(),
+        encoding="utf-8",
+    )
+    changed_prompt = replace(result.prompt, config_name="different_config")
+    current_key = cache.key_for(
+        changed_prompt,
+        provider="openai",
+        model=result.model,
+    )
+
+    loaded = cache.load(
+        current_key,
+        prompt=changed_prompt,
+        provider="openai",
+        model=result.model,
+    )
+
+    assert loaded is None
 
 
 def test_reservation_blocks_an_identical_concurrent_request(tmp_path: Path) -> None:

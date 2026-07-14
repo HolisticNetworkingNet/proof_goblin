@@ -19,6 +19,44 @@ proof-goblin prompt proof_goblin/docs/overview.md \
 This command requires only the core package and is useful for validating a
 configuration or inspecting exactly what will be sent to a provider.
 
+### Prompt formats and files
+
+The `prompt` command supports plain text, canonical JSON, Markdown, and
+standalone HTML. Use `--format` to select the standard-output representation:
+
+```bash
+proof-goblin prompt proof_goblin/docs/overview.md \
+  --config proof_goblin/configs/documentation.pgcfg \
+  --review technical_writer_first_pass \
+  --format markdown
+```
+
+Use repeatable `--output` arguments to create several representations of the
+same assembled prompt. Each filename extension selects its format:
+
+```bash
+proof-goblin prompt proof_goblin/docs/overview.md \
+  --config proof_goblin/configs/documentation.pgcfg \
+  --review technical_writer_first_pass \
+  --output overview-prompt.md \
+  --output overview-prompt.html \
+  --output overview-prompt.json
+```
+
+This operation never contacts a provider. Text preserves the terminal
+`[SYSTEM]` and `[USER]` representation. JSON is a versioned
+`proof-goblin-prompt` record with prompt and provenance fields. Markdown and
+HTML add a shareable heading, metadata, sensitive-content warning, and separate
+System and User sections. HTML escapes all prompt-derived values; Markdown uses
+code fences longer than any backtick sequence in the prompt so Artifact content
+cannot close its containing fence. The JSON contract is described by the
+bundled `proof_goblin/schemas/prompt.v1.schema.json` schema.
+
+Unlike human-facing review reports, **every prompt format contains the complete
+Artifact**. Treat prompt files as sensitive, even when they are created only to
+share a proposed review with a colleague. `--format` controls standard output
+and cannot be combined with `--output`.
+
 ## Run a Review
 
 Install the OpenAI extra and set `OPENAI_API_KEY` before running a live review:
@@ -37,7 +75,7 @@ components, artifact identity, creation time, provider metadata, and numbered
 observations with their evidence. Use `--model` to override `OPENAI_MODEL` or
 the package default.
 
-## Report formats
+## Review report formats
 
 Select plain text, JSON, Markdown, or standalone HTML on standard output with
 `--format`:

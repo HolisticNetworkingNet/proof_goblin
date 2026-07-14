@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://proof-goblin.local/schemas/prompt.v1.schema.json",
+  "title": "Proof Goblin assembled prompt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "schema_version",
+    "review",
+    "config",
+    "artifact",
+    "prompt"
+  ],
+  "properties": {
+    "format": {
+      "const": "proof-goblin-prompt"
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1}
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "sha256"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "media_type", "sha256"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "media_type": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "prompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "user"],
+      "properties": {
+        "system": {"type": "string", "minLength": 1},
+        "user": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

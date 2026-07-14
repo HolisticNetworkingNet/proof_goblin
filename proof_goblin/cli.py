@@ -21,6 +21,11 @@ from proof_goblin.providers import (
     OpenAIProvider,
     ProviderError,
 )
+from proof_goblin.prompt_rendering import (
+    PromptFormat,
+    PromptRenderError,
+    render_prompt,
+)
 from proof_goblin.reports import (
     ReportFormat,
     ReportRenderError,
@@ -45,6 +50,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         CliError,
         ConfigError,
         PromptBuildError,
+        PromptRenderError,
         ProviderError,
         ReviewCacheError,
         ReportRenderError,
@@ -66,6 +72,21 @@ def _build_parser() -> argparse.ArgumentParser:
         help="assemble and print a prompt without contacting a provider",
     )
     _add_common_arguments(prompt_parser)
+    prompt_parser.add_argument(
+        "--format",
+        choices=tuple(item.value for item in PromptFormat),
+        help=(
+            "standard output format (default: text; file formats are inferred "
+            "from --output extensions)"
+        ),
+    )
+    prompt_parser.add_argument(
+        "-o",
+        "--output",
+        action="append",
+        metavar="PATH",
+        help="write an assembled prompt inferred from PATH; may be repeated",
+    )
     prompt_parser.set_defaults(handler=_prompt_command)
 
     review_parser = subparsers.add_parser(
@@ -139,6 +160,7 @@ def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _prompt_command(args: argparse.Namespace) -> int:
+    outputs = _resolve_prompt_outputs(args.format, args.output)
     config, artifact, artifact_name, media_type = _load_inputs(args)
     prompt = PromptBuilder(config).build(
         review=args.review,
@@ -146,7 +168,15 @@ def _prompt_command(args: argparse.Namespace) -> int:
         artifact_name=artifact_name,
         artifact_media_type=media_type,
     )
-    print(prompt)
+    rendered_outputs = [
+        (path, render_prompt(prompt, prompt_format))
+        for path, prompt_format in outputs
+    ]
+    for path, rendered in rendered_outputs:
+        if path is None:
+            sys.stdout.write(rendered)
+        else:
+            _write_output(path, rendered, noun="prompt")
     return 0
 
 
@@ -217,7 +247,7 @@ def _review_command(args: argparse.Namespace) -> int:
         if path is None:
             sys.stdout.write(rendered)
         else:
-            _write_report(path, rendered)
+            _write_output(path, rendered, noun="report")
     return 0
 
 
@@ -258,6 +288,35 @@ _FORMAT_EXTENSIONS = {
     ".htm": ReportFormat.HTML,
 }
 
+_PROMPT_FORMAT_EXTENSIONS = {
+    ".txt": PromptFormat.TEXT,
+    ".text": PromptFormat.TEXT,
+    ".json": PromptFormat.JSON,
+    ".md": PromptFormat.MARKDOWN,
+    ".markdown": PromptFormat.MARKDOWN,
+    ".html": PromptFormat.HTML,
+    ".htm": PromptFormat.HTML,
+}
+
+
+def _resolve_prompt_format(
+    format_value: str | None,
+    output_value: str | None,
+) -> PromptFormat:
+    if format_value:
+        return PromptFormat(format_value)
+    if not output_value:
+        return PromptFormat.TEXT
+    suffix = Path(output_value).suffix.lower()
+    try:
+        return _PROMPT_FORMAT_EXTENSIONS[suffix]
+    except KeyError as exc:
+        supported_extensions = ", ".join(_PROMPT_FORMAT_EXTENSIONS)
+        raise CliError(
+            f"unsupported output extension {suffix!r} in {output_value!r}; "
+            f"use one of: {supported_extensions}"
+        ) from exc
+
 
 def _resolve_report_format(
     format_value: str | None,
@@ -293,7 +352,24 @@ def _resolve_outputs(
     return tuple((path, _resolve_report_format(None, str(path))) for path in paths)
 
 
-def _write_report(path: Path, content: str) -> None:
+def _resolve_prompt_outputs(
+    format_value: str | None,
+    output_values: list[str] | None,
+) -> tuple[tuple[Path | None, PromptFormat], ...]:
+    if not output_values:
+        return ((None, _resolve_prompt_format(format_value, None)),)
+    if format_value:
+        raise CliError("--format cannot be combined with --output; use file extensions")
+
+    paths = tuple(Path(value) for value in output_values)
+    if len(set(paths)) != len(paths):
+        raise CliError("each --output path must be unique")
+    return tuple(
+        (path, _resolve_prompt_format(None, str(path))) for path in paths
+    )
+
+
+def _write_output(path: Path, content: str, *, noun: str) -> None:
     temporary_path: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
@@ -320,4 +396,4 @@ def _write_report(path: Path, content: str) -> None:
                 temporary_path.unlink(missing_ok=True)
             except OSError:
                 pass
-        raise CliError(f"could not write report to {path}: {exc}") from exc
+        raise CliError(f"could not write {noun} to {path}: {exc}") from exc

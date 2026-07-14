@@ -21,6 +21,11 @@ prompt = PromptBuilder(config).build(
 print(prompt)
 ```
 
+An assembled Prompt can also be rendered locally as text, versioned JSON,
+Markdown, or standalone HTML with `render_prompt()`. Every representation
+contains the complete Artifact and must be handled as sensitive content. See
+{doc}`Report Formats <report-formats>` for the rendering and escaping contract.
+
 ## Resolved reviews
 
 `PromptBuilder.resolve()` exposes the review definition, including its stable

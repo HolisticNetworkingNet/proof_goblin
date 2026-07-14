@@ -41,6 +41,13 @@ from proof_goblin.providers import (
     ProviderResponseError,
     ProviderUnavailableError,
 )
+from proof_goblin.prompt_rendering import (
+    PROMPT_DOCUMENT_FORMAT,
+    PROMPT_DOCUMENT_SCHEMA_VERSION,
+    PromptFormat,
+    PromptRenderError,
+    render_prompt,
+)
 from proof_goblin.reports import (
     HtmlReportRenderer,
     JsonReportRenderer,
@@ -67,9 +74,13 @@ __all__ = [
     "MarkdownReportRenderer",
     "Observation",
     "OpenAIProvider",
+    "PROMPT_DOCUMENT_FORMAT",
+    "PROMPT_DOCUMENT_SCHEMA_VERSION",
     "Prompt",
     "PromptBuildError",
     "PromptBuilder",
+    "PromptFormat",
+    "PromptRenderError",
     "Provider",
     "ProviderError",
     "ProviderQuotaError",
@@ -94,5 +105,6 @@ __all__ = [
     "Reviewer",
     "TextReportRenderer",
     "TokenUsage",
+    "render_prompt",
     "render_report",
 ]

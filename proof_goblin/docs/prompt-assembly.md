@@ -23,9 +23,11 @@ print(prompt)
 
 ## Resolved reviews
 
-`PromptBuilder.resolve()` exposes the exact lens, mission, protocol, and output
-schema selected by a named review. This makes the inputs inspectable before a
-prompt is generated.
+`PromptBuilder.resolve()` exposes the review definition, including its stable
+identifier, human-readable title and description, and the exact lens, mission,
+protocol, and output schema selected by the review. This makes both its
+presentation metadata and behavioral inputs inspectable before a prompt is
+generated.
 
 ## Prompt roles
 
@@ -42,4 +44,6 @@ material. Artifact content is never interpolated into the system instructions.
 The assembled prompt records the review and configuration names, configuration
 version and digest, artifact name and media type, and the artifact's SHA-256
 digest. `Reviewer.review()` carries this information into the resulting
-`ReviewResult`, whose serialized form can be stored by a host application.
+`ReviewResult`. The result also retains the review's title, description, and
+resolved component names, so its serialized form is self-contained for a host
+application.

@@ -25,7 +25,8 @@ payload = result.to_dict()
 The record includes:
 
 - format and schema versions;
-- review name;
+- review identifier, human-readable title and description;
+- resolved lens, mission, protocol, and output-schema names;
 - configuration name, version, and SHA-256 digest;
 - artifact name, media type, and SHA-256 digest;
 - provider, resolved model, response ID, and token usage;
@@ -34,6 +35,12 @@ The record includes:
 
 The bundled schema is
 `proof_goblin/schemas/review-result.v1.schema.json`.
+
+The stable review identifier is suitable for application logic and provenance.
+The title and description are presentation-ready. Because the resolved
+component names travel with the result, a host does not need the original
+configuration bundle to attribute the observations or explain which review was
+run.
 
 ## JSON serialization
 

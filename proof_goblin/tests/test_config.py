@@ -32,6 +32,8 @@ def valid_config() -> dict[str, object]:
         "output_schemas": {"observation.v1": {"type": "array"}},
         "reviews": {
             "first_pass": {
+                "title": "Reader Clarity Review",
+                "description": "Evaluates whether the artifact is clear to a reader.",
                 "lens": "reader",
                 "mission": "clarity",
                 "protocol": "questions_only",
@@ -50,6 +52,8 @@ def test_loads_example_bundle_with_provenance() -> None:
     assert config.sha256 == hashlib.sha256(EXAMPLE_CONFIG.read_bytes()).hexdigest()
     assert config.lens("first_time_diner")["goals"]
     assert config.review("homepage_first_pass").mission == "homepage_clarity"
+    assert config.review("homepage_first_pass").title == "Restaurant Homepage Review"
+    assert config.review("homepage_first_pass").description.startswith("Evaluates")
     assert config.metadata["description"].startswith("Reusable review definitions")
 
 
@@ -99,6 +103,28 @@ def test_rejects_unknown_review_reference() -> None:
     with pytest.raises(
         ConfigValidationError,
         match="reviews.first_pass.lens references unknown lens 'missing'",
+    ):
+        Config.from_mapping(data)
+
+
+@pytest.mark.parametrize("field", ["title", "description"])
+@pytest.mark.parametrize("value", [None, "", "  "])
+def test_rejects_missing_or_empty_review_presentation_metadata(
+    field: str, value: object
+) -> None:
+    data = valid_config()
+    reviews = data["reviews"]
+    assert isinstance(reviews, dict)
+    review = reviews["first_pass"]
+    assert isinstance(review, dict)
+    if value is None:
+        review.pop(field)
+    else:
+        review[field] = value
+
+    with pytest.raises(
+        ConfigValidationError,
+        match=rf"reviews\.first_pass\.{field} must be a non-empty string",
     ):
         Config.from_mapping(data)
 

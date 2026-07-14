@@ -34,25 +34,29 @@ def test_documentation_config_contains_expected_lenses(
 
 
 @pytest.mark.parametrize(
-    ("review_name", "lens_name", "mission_name"),
+    ("review_name", "title", "lens_name", "mission_name"),
     [
         (
             "business_owner_first_pass",
+            "Business Owner Documentation Review",
             "business_owner",
             "business_comprehension",
         ),
         (
             "django_developer_first_pass",
+            "Django Developer Documentation Review",
             "django_python_developer",
             "developer_implementation",
         ),
         (
             "technical_writer_first_pass",
+            "Technical Writing Review",
             "technical_writer",
             "technical_writing_quality",
         ),
         (
             "front_end_readability",
+            "Front-End Readability Review",
             "technical_writer",
             "front_end_readability",
         ),
@@ -61,11 +65,14 @@ def test_documentation_config_contains_expected_lenses(
 def test_documentation_reviews_resolve_expected_components(
     documentation_config: Config,
     review_name: str,
+    title: str,
     lens_name: str,
     mission_name: str,
 ) -> None:
     resolved = PromptBuilder(documentation_config).resolve(review_name)
 
+    assert resolved.definition.title == title
+    assert resolved.definition.description
     assert resolved.definition.lens == lens_name
     assert resolved.definition.mission == mission_name
     assert resolved.definition.protocol == "documentation_questions_only"

@@ -176,6 +176,11 @@ def _guess_media_type(artifact_name: str) -> str:
 
 
 def _print_text_result(result: ReviewResult, stream: TextIO) -> None:
+    print(f"Review: {result.review.title}", file=stream)
+    print(f"Review ID: {result.review.name}", file=stream)
+    print(f"Description: {result.review.description}", file=stream)
+    print(f"Lens: {result.review.lens}", file=stream)
+    print(f"Mission: {result.review.mission}", file=stream)
     print(f"Provider: {result.provider}", file=stream)
     print(f"Model: {result.model}", file=stream)
     print(f"Response: {result.response_id or '-'}", file=stream)

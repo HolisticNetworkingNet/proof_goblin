@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import datetime, timezone
 from importlib.resources import files
 from pathlib import Path
@@ -15,6 +16,7 @@ from proof_goblin import (
     Config,
     Observation,
     PromptBuilder,
+    ReviewAttribution,
     ReviewResult,
     TokenUsage,
 )
@@ -41,6 +43,18 @@ def make_result() -> ReviewResult:
             ),
         ),
         prompt=prompt,
+        review=ReviewAttribution(
+            name="homepage_first_pass",
+            title="Restaurant Homepage Review",
+            description=(
+                "Evaluates whether a first-time diner can understand the restaurant "
+                "and find the information needed to visit."
+            ),
+            lens="first_time_diner",
+            mission="homepage_clarity",
+            protocol="questions_only",
+            output_schema="observation.v1",
+        ),
         provider="openai",
         model="gpt-5.6-sol",
         response_id="resp_123",
@@ -70,7 +84,18 @@ def test_to_dict_returns_versioned_host_record() -> None:
     assert record["format"] == "proof-goblin-review-result"
     assert record["schema_version"] == "1.0"
     assert record["created_at"] == "2026-07-13T18:30:00Z"
-    assert record["review"] == {"name": "homepage_first_pass"}
+    assert record["review"] == {
+        "name": "homepage_first_pass",
+        "title": "Restaurant Homepage Review",
+        "description": (
+            "Evaluates whether a first-time diner can understand the restaurant "
+            "and find the information needed to visit."
+        ),
+        "lens": "first_time_diner",
+        "mission": "homepage_clarity",
+        "protocol": "questions_only",
+        "output_schema": "observation.v1",
+    }
     assert record["config"]["name"] == "restaurants"
     assert record["artifact"]["name"] == "homepage.html"
     assert record["execution"]["provider"] == "openai"
@@ -112,10 +137,28 @@ def test_result_requires_timezone_aware_creation_time() -> None:
         ReviewResult(
             observations=result.observations,
             prompt=result.prompt,
+            review=result.review,
             provider=result.provider,
             model=result.model,
             response_id=result.response_id,
             usage=result.usage,
             raw_output=result.raw_output,
             created_at=datetime(2026, 7, 13, 18, 30),
+        )
+
+
+def test_result_requires_attribution_to_match_prompt() -> None:
+    result = make_result()
+
+    with pytest.raises(ValueError, match="must match prompt review name"):
+        ReviewResult(
+            observations=result.observations,
+            prompt=result.prompt,
+            review=replace(result.review, name="different_review"),
+            provider=result.provider,
+            model=result.model,
+            response_id=result.response_id,
+            usage=result.usage,
+            raw_output=result.raw_output,
+            created_at=result.created_at,
         )

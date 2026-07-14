@@ -31,8 +31,11 @@ proof-goblin review proof_goblin/docs/overview.md \
   --review technical_writer_first_pass
 ```
 
-The command prints provider metadata followed by numbered observations and
-their evidence. Use `--model` to override `OPENAI_MODEL` or the package default.
+The command prints the review title and description, its stable identifier,
+resolved lens and mission, provider metadata, and then numbered observations
+with their evidence. The title is intended for readers; the identifier remains
+visible so a run can be traced back to the exact named review. Use `--model` to
+override `OPENAI_MODEL` or the package default.
 
 ## JSON Output
 
@@ -46,6 +49,8 @@ proof-goblin review proof_goblin/docs/overview.md \
 ```
 
 The output uses the same versioned record returned by `ReviewResult.to_json()`.
+Its `review` object includes the stable identifier, human-readable title and
+description, and resolved lens, mission, protocol, and output-schema names.
 Prompt text is omitted by default because it contains the complete artifact.
 Add `--include-prompt` when an explicit archival policy requires it.
 

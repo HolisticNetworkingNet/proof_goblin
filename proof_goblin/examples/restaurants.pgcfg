@@ -68,6 +68,8 @@
   },
   "reviews": {
     "homepage_first_pass": {
+      "title": "Restaurant Homepage Review",
+      "description": "Evaluates whether a first-time diner can understand the restaurant and find the information needed to visit.",
       "lens": "first_time_diner",
       "mission": "homepage_clarity",
       "protocol": "questions_only",

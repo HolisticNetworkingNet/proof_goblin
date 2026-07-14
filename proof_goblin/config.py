@@ -37,6 +37,8 @@ class ReviewDefinition:
     """References to the components that make up a named review."""
 
     name: str
+    title: str
+    description: str
     lens: str
     mission: str
     protocol: str
@@ -134,6 +136,8 @@ class Config:
             _require_component_name(review_name, "reviews")
             review_path = f"reviews.{review_name}"
             review = _require_mapping(value, review_path)
+            title = _require_string(review, "title", review_path)
+            description = _require_string(review, "description", review_path)
             lens = _require_string(review, "lens", review_path)
             mission = _require_string(review, "mission", review_path)
             protocol = _require_string(review, "protocol", review_path)
@@ -153,6 +157,8 @@ class Config:
 
             reviews[review_name] = ReviewDefinition(
                 name=review_name,
+                title=title,
+                description=description,
                 lens=lens,
                 mission=mission,
                 protocol=protocol,
@@ -160,7 +166,15 @@ class Config:
                 metadata={
                     key: item
                     for key, item in review.items()
-                    if key not in {"lens", "mission", "protocol", "output_schema"}
+                    if key
+                    not in {
+                        "title",
+                        "description",
+                        "lens",
+                        "mission",
+                        "protocol",
+                        "output_schema",
+                    }
                 },
             )
 

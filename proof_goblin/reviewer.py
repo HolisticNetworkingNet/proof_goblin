@@ -11,7 +11,7 @@ from jsonschema import SchemaError, ValidationError, validators
 
 from proof_goblin.builder import PromptBuilder
 from proof_goblin.config import Config
-from proof_goblin.observations import Observation, ReviewResult
+from proof_goblin.observations import Observation, ReviewAttribution, ReviewResult
 from proof_goblin.providers.base import Provider
 
 
@@ -55,6 +55,15 @@ class Reviewer:
         return ReviewResult(
             observations=observations,
             prompt=prompt,
+            review=ReviewAttribution(
+                name=resolved.definition.name,
+                title=resolved.definition.title,
+                description=resolved.definition.description,
+                lens=resolved.definition.lens,
+                mission=resolved.definition.mission,
+                protocol=resolved.definition.protocol,
+                output_schema=resolved.definition.output_schema,
+            ),
             provider=response.provider,
             model=response.model,
             response_id=response.response_id,

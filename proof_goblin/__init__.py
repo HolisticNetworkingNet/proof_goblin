@@ -23,6 +23,7 @@ from proof_goblin.observations import (
     REVIEW_RESULT_FORMAT,
     REVIEW_RESULT_SCHEMA_VERSION,
     Observation,
+    ReviewAttribution,
     ReviewResult,
     TokenUsage,
 )
@@ -68,6 +69,7 @@ __all__ = [
     "REVIEW_RESULT_FORMAT",
     "REVIEW_RESULT_SCHEMA_VERSION",
     "ReviewError",
+    "ReviewAttribution",
     "ReviewDefinition",
     "ReviewOutputValidationError",
     "ReviewResult",

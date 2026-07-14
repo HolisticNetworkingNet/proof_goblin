@@ -21,7 +21,7 @@ the complete top-level envelope and one member of each component collection:
   "version": "0.1.0",
   "lenses": {
     "reader": {
-      "description": "A reader trying to understand and use the document."
+      "description": "A documentation-reader perspective focused on comprehension and use."
     }
   },
   "missions": {
@@ -219,4 +219,4 @@ produce the versioned result record.
 
 For a substantial working bundle, see
 `proof_goblin/configs/documentation.pgcfg` in a source checkout and
-{doc}`Bundled Documentation Reviews <documentation-review-configuration>`.
+{doc}`Bundled Documentation Reviews <bundled-documentation-reviews>`.

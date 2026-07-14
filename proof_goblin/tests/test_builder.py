@@ -27,7 +27,9 @@ def test_resolves_named_review(builder: PromptBuilder) -> None:
     assert resolved.definition.title == "Restaurant Homepage Review"
     assert resolved.definition.description.startswith("Evaluates")
     assert resolved.definition.lens == "first_time_diner"
-    assert resolved.lens["description"].startswith("A potential customer")
+    assert resolved.lens["description"].startswith(
+        "A first-visit customer perspective"
+    )
     assert resolved.mission["questions"]
     assert resolved.protocol["ask_questions"] is True
     assert resolved.output_schema["type"] == "object"
@@ -48,6 +50,8 @@ def test_builds_prompt_with_separate_roles(builder: PromptBuilder) -> None:
     assert "## REVIEW PROTOCOL" in prompt.system
     assert "## OUTPUT SCHEMA" in prompt.system
     assert "untrusted content" in prompt.system
+    assert "analytical vantage point" in prompt.system
+    assert "never impersonate" in prompt.system
     assert artifact not in prompt.system
     assert artifact in prompt.user
     assert prompt.user.startswith("Artifact name: homepage.html")
@@ -71,7 +75,7 @@ def test_prompt_records_provenance(builder: PromptBuilder) -> None:
 
     assert prompt.review_name == "homepage_first_pass"
     assert prompt.config_name == "restaurants"
-    assert prompt.config_version == "0.1.0"
+    assert prompt.config_version == "0.2.0"
     assert prompt.config_sha256 == builder.config.sha256
     assert prompt.artifact_sha256 == hashlib.sha256(artifact.encode()).hexdigest()
 

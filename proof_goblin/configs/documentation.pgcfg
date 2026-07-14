@@ -2,20 +2,20 @@
   "format": "proof-goblin-config",
   "schema_version": "1.0",
   "name": "documentation",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Reusable lenses and reviews for writing, understanding, and maintaining documentation.",
   "lenses": {
     "business_owner": {
-      "description": "An intelligent business owner or operator with strong knowledge of their organization, customers, and day-to-day work, but no assumed software-development knowledge.",
+      "description": "A business-operations perspective grounded in organizational responsibilities, customer needs, and day-to-day work, without assuming software-development knowledge.",
       "circumstances": [
-        "Is reading to understand what a capability does and whether it matters to the business",
-        "Has limited time and may be comparing several possible courses of action",
-        "May encounter software terminology, acronyms, or implementation details that are not part of their normal work",
-        "Needs enough context to make a confident decision or take the next step"
+        "The documentation is evaluated for whether a capability and its business relevance can be understood",
+        "The decision context may involve limited time and comparison among several possible courses of action",
+        "Software terminology, acronyms, and implementation details may not be familiar to the intended audience",
+        "Enough context is needed to support a confident decision or next step"
       ],
       "knowledge": [
-        "Understands business operations, customer needs, costs, risks, and organizational responsibilities",
-        "Does not necessarily know Django, Python, APIs, deployment, or software architecture"
+        "Business operations, customer needs, costs, risks, and organizational responsibilities are treated as available context",
+        "Django, Python, APIs, deployment, and software architecture are not assumed knowledge"
       ],
       "goals": [
         "Understand what the documented capability enables",
@@ -35,11 +35,11 @@
       ]
     },
     "django_python_developer": {
-      "description": "An experienced Python and Django developer responsible for understanding, integrating, operating, or extending production software.",
+      "description": "A Python and Django implementation-and-operations perspective grounded in the demands of integrating, operating, and extending production software.",
       "circumstances": [
-        "Is reading in order to implement, integrate, configure, test, or troubleshoot the documented capability",
-        "Expects examples and instructions to be precise enough to follow without guessing",
-        "Needs to understand assumptions, contracts, failure modes, and operational consequences"
+        "The documentation is evaluated for implementation, integration, configuration, testing, and troubleshooting",
+        "Examples and instructions are expected to be precise enough to follow without guessing",
+        "Assumptions, contracts, failure modes, and operational consequences must be visible"
       ],
       "knowledge": [
         "Python packaging, typing, testing, and common library conventions",
@@ -64,11 +64,11 @@
       ]
     },
     "technical_writer": {
-      "description": "An experienced technical writer evaluating documentation for audience fit, information architecture, clarity, consistency, and usefulness.",
+      "description": "A technical-writing perspective focused on audience fit, information architecture, clarity, consistency, and usefulness.",
       "circumstances": [
-        "Is reviewing documentation that may serve business readers, developers, or both",
-        "Treats terminology, structure, examples, navigation, and cognitive load as parts of one reading experience",
-        "Looks for issues that prevent readers from finding, understanding, trusting, or acting on information"
+        "The documentation may serve business readers, developers, or both",
+        "Terminology, structure, examples, navigation, and cognitive load are evaluated as parts of one reading experience",
+        "The review brings into focus issues that prevent readers from finding, understanding, trusting, or acting on information"
       ],
       "knowledge": [
         "Audience analysis, information architecture, progressive disclosure, and task-oriented documentation",
@@ -124,6 +124,27 @@
         "What important information is missing, duplicated, buried, or presented at the wrong level of detail?"
       ]
     },
+    "conceptual_reference_quality": {
+      "description": "Evaluate whether a conceptual or terminology reference establishes accurate, coherent, and retrievable shared meaning.",
+      "document_expectations": [
+        "The artifact explains concepts or defines vocabulary rather than teaching a procedure",
+        "Readers may consult individual entries non-sequentially while interpreting other documentation, configuration, output, or code",
+        "Success means that readers can distinguish, relate, and consistently apply the documented concepts"
+      ],
+      "questions": [
+        "Is the purpose and scope of the reference clear, including what vocabulary it does and does not define?",
+        "Is each definition precise, self-contained, and free of circular or undefined terminology?",
+        "Are similar concepts clearly distinguished and are important relationships between terms explained?",
+        "Do names and definitions agree with the implemented configuration, prompt, result, CLI, and surrounding documentation where those claims appear?",
+        "Can readers locate an individual term quickly, and are examples or cross-references provided where a definition alone would be ambiguous?",
+        "Which necessary concepts are missing, duplicated, inconsistent, or presented at the wrong level of detail?"
+      ],
+      "guardrails": [
+        "Evaluate the artifact as conceptual or reference documentation, not as a tutorial or procedural guide",
+        "Do not require setup instructions, implementation steps, decisions, calls to action, or a next-step workflow unless the artifact claims to provide them",
+        "Treat accurate definition, differentiation, relationship, consistency, and retrieval as the intended reader outcomes"
+      ]
+    },
     "front_end_readability": {
       "description": "Evaluate the readability and scan path of reader-facing web content without turning the review into copy editing.",
       "questions": [
@@ -148,6 +169,7 @@
         "Identify or quote the concrete evidence that prompted the question",
         "Do not manufacture missing facts or assume the author's intended answer",
         "Do not report personal preference as a defect",
+        "Apply the Proof Lens as an analytical vantage point; never impersonate, role-play, or speak as a represented stakeholder",
         "Prioritize issues that materially affect the intended reader"
       ]
     }
@@ -195,6 +217,22 @@
       "description": "Evaluates documentation for audience fit, organization, clarity, consistency, and information gaps.",
       "lens": "technical_writer",
       "mission": "technical_writing_quality",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "technical_writer_concept_reference": {
+      "title": "Technical Writing Concept Reference Review",
+      "description": "Evaluates whether conceptual and terminology documentation provides clear, coherent, and usable shared meaning.",
+      "lens": "technical_writer",
+      "mission": "conceptual_reference_quality",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "django_developer_concept_reference": {
+      "title": "Developer Concept Reference Review",
+      "description": "Evaluates whether conceptual and terminology documentation precisely represents the system an experienced Python developer must understand.",
+      "lens": "django_python_developer",
+      "mission": "conceptual_reference_quality",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     },

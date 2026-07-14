@@ -38,6 +38,9 @@ An assembled `Prompt` keeps two roles separate:
 
 The system instructions explicitly treat the artifact as untrusted review
 material. Artifact content is never interpolated into the system instructions.
+They also apply the Proof Lens as an analytical vantage point: Proof Goblin
+does not impersonate, role-play, or speak as a stakeholder represented by that
+perspective.
 
 ## Provenance
 

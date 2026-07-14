@@ -11,6 +11,11 @@ markdown = render_report(result, ReportFormat.MARKDOWN)
 html = render_report(result, ReportFormat.HTML)
 ```
 
+The command-line interface uses this same boundary for repeated `--output`
+arguments and for results recovered from its private filesystem cache. All
+requested formats are consequently renderings of one `ReviewResult`, rather
+than separate provider responses.
+
 `render_report()` accepts `text`, `json`, `markdown`, and `html`. The public
 `ReportRenderer` protocol and the concrete renderer classes provide the same
 boundary when a host needs to select or inject a renderer itself.
@@ -21,9 +26,10 @@ Human-facing text, Markdown, and HTML reports include:
 
 - the review title, description, and stable identifier;
 - the resolved Proof Lens, Mission, Review Protocol, and Output Schema names;
-- artifact name, media type, and SHA-256 digest;
-- creation time and observation count;
-- provider, model, and response identifiers; and
+- configuration name and version;
+- artifact name and media type;
+- result format, schema version, creation time, and observation count;
+- provider, model, response identifier, and token usage; and
 - numbered questions with their evidence.
 
 These formats identify the reviewed artifact but do not contain its body. They
@@ -63,6 +69,15 @@ Markdown reports are intended for repositories, documentation systems, issue
 trackers, and subsequent editing. Questions and evidence use quoted blocks so
 multiline model output remains associated with the correct observation.
 
+The review title is the page heading. A human-readable creation date in the
+local system timezone appears directly below it, followed by the review
+description. A precise local timestamp with its UTC offset remains in the
+metadata table. Canonical JSON continues to normalize `created_at` to UTC for
+portable storage and interchange. Report metadata appears in a native
+four-column Markdown table using the sequence key, value, key, value. Key
+labels are bold; the table does not depend on HTML, column spans, or custom
+colors.
+
 Artifact-derived and model-derived values are HTML-escaped before they enter the
 report. This prevents embedded HTML from becoming active when the Markdown is
 rendered by a system that permits raw HTML.
@@ -73,6 +88,8 @@ HTML reports contain their own responsive styles and require no external
 assets. All configuration-derived, artifact-derived, and model-derived values
 are escaped before interpolation into the document. The report can therefore
 display markup-like evidence as text without treating it as executable HTML.
+Metadata uses the same fixed four-column key/value structure without column
+spans or custom cell colors.
 
 PDF is not currently supported. The renderer boundary allows another format to
 be added without coupling it to provider execution or CLI argument parsing.

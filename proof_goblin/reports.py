@@ -6,10 +6,15 @@
 from __future__ import annotations
 
 import html
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Mapping, Protocol
 
-from proof_goblin.observations import ReviewResult
+from proof_goblin.observations import (
+    REVIEW_RESULT_FORMAT,
+    REVIEW_RESULT_SCHEMA_VERSION,
+    ReviewResult,
+)
 
 
 class ReportRenderError(ValueError):
@@ -37,6 +42,14 @@ class ReportRenderer(Protocol):
         """Return the complete rendered report."""
 
 
+@dataclass(frozen=True, slots=True)
+class _ReportDetail:
+    """One metadata field shared by every human-facing report."""
+
+    key: str
+    value: str
+
+
 class TextReportRenderer:
     """Render a plain-text report suitable for a terminal."""
 
@@ -50,22 +63,14 @@ class TextReportRenderer:
         lines = [
             result.review.title,
             "=" * len(result.review.title),
+            _format_display_created_at(result),
             result.review.description,
             "",
-            f"Review ID: {result.review.name}",
-            f"Proof Lens: {result.review.lens}",
-            f"Mission: {result.review.mission}",
-            f"Review Protocol: {result.review.protocol}",
-            f"Output Schema: {result.review.output_schema}",
-            f"Artifact: {result.prompt.artifact_name}",
-            f"Artifact media type: {result.prompt.artifact_media_type}",
-            f"Artifact SHA-256: {result.prompt.artifact_sha256}",
-            f"Created: {_format_created_at(result)}",
-            f"Provider: {result.provider}",
-            f"Model: {result.model}",
-            f"Response: {result.response_id or '-'}",
-            f"Observations: {len(result.observations)}",
+            "Review details:",
         ]
+        for detail_row in _report_detail_rows(result):
+            for detail in detail_row:
+                lines.append(f"  {detail.key}: {detail.value}")
         for index, observation in enumerate(result.observations, start=1):
             lines.extend(
                 [
@@ -102,23 +107,13 @@ class MarkdownReportRenderer:
         lines = [
             f"# {_markdown_inline(result.review.title)}",
             "",
+            f"*{_markdown_inline(_format_display_created_at(result))}*",
+            "",
             _markdown_inline(result.review.description),
             "",
             "## Review details",
             "",
-            f"- **Review ID:** {_markdown_code(result.review.name)}",
-            f"- **Proof Lens:** {_markdown_code(result.review.lens)}",
-            f"- **Mission:** {_markdown_code(result.review.mission)}",
-            f"- **Review Protocol:** {_markdown_code(result.review.protocol)}",
-            f"- **Output Schema:** {_markdown_code(result.review.output_schema)}",
-            f"- **Artifact:** {_markdown_code(result.prompt.artifact_name)}",
-            f"- **Media type:** {_markdown_code(result.prompt.artifact_media_type)}",
-            f"- **Artifact SHA-256:** {_markdown_code(result.prompt.artifact_sha256)}",
-            f"- **Created:** {_markdown_inline(_format_created_at(result))}",
-            f"- **Provider:** {_markdown_code(result.provider)}",
-            f"- **Model:** {_markdown_code(result.model)}",
-            f"- **Response:** {_markdown_code(result.response_id or '-')}",
-            f"- **Observations:** {len(result.observations)}",
+            _render_markdown_detail_table(_report_detail_rows(result)),
             "",
             "## Observations",
         ]
@@ -159,26 +154,7 @@ class HtmlReportRenderer:
         )
         if not observations:
             observations = '      <p class="empty">No observations were reported.</p>'
-        created_at = _format_created_at(result)
-        details = (
-            ("Review ID", result.review.name),
-            ("Proof Lens", result.review.lens),
-            ("Mission", result.review.mission),
-            ("Review Protocol", result.review.protocol),
-            ("Output Schema", result.review.output_schema),
-            ("Artifact", result.prompt.artifact_name),
-            ("Media type", result.prompt.artifact_media_type),
-            ("Artifact SHA-256", result.prompt.artifact_sha256),
-            ("Created", created_at),
-            ("Provider", result.provider),
-            ("Model", result.model),
-            ("Response", result.response_id or "-"),
-            ("Observations", str(len(result.observations))),
-        )
-        detail_rows = "\n".join(
-            f"        <dt>{_html(label)}</dt><dd>{_html(value)}</dd>"
-            for label, value in details
-        )
+        detail_table = _render_html_detail_table(_report_detail_rows(result))
         return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -193,16 +169,21 @@ class HtmlReportRenderer:
     header {{ border-top: .4rem solid #607744; }}
     h1, h2, h3 {{ line-height: 1.2; }}
     h1 {{ margin-top: 0; }}
+    .created {{ margin-top: -.5rem; font-weight: 600; }}
     section {{ margin-top: 1.25rem; }}
-    dl {{ display: grid; grid-template-columns: minmax(9rem, auto) 1fr; gap: .5rem 1rem; }}
-    dt {{ font-weight: 700; }}
-    dd {{ margin: 0; overflow-wrap: anywhere; }}
+    table {{ width: 100%; border-collapse: collapse; margin-top: 1.5rem; }}
+    caption {{ text-align: left; font-size: 1.35rem; font-weight: 700; margin-bottom: .5rem; }}
+    th, td {{ border-top: 1px solid #d8d2c2; padding: .55rem .7rem; text-align: left; vertical-align: top; }}
+    .detail-key {{ width: 16%; }}
+    .detail-value {{ width: 34%; }}
+    td {{ overflow-wrap: anywhere; }}
     .observation p {{ white-space: pre-wrap; }}
     .evidence {{ border-left: .25rem solid #9e6f36; padding-left: 1rem; }}
     .empty {{ font-style: italic; }}
     @media (prefers-color-scheme: dark) {{
       body {{ background: #1d1f1a; color: #ece9df; }}
       header, section {{ background: #292c25; border-color: #4c5144; box-shadow: none; }}
+      th, td {{ border-color: #4c5144; }}
     }}
   </style>
 </head>
@@ -210,10 +191,9 @@ class HtmlReportRenderer:
   <main>
     <header>
       <h1>{title}</h1>
+      <p class="created"><time datetime="{_html(_format_created_at(result))}">{_html(_format_display_created_at(result))}</time></p>
       <p>{_html(result.review.description)}</p>
-      <dl>
-{detail_rows}
-      </dl>
+{detail_table}
     </header>
     <section aria-labelledby="observations-heading">
       <h2 id="observations-heading">Observations</h2>
@@ -271,7 +251,48 @@ def _reject_prompt_in_presentation(
 
 
 def _format_created_at(result: ReviewResult) -> str:
-    return result.created_at.isoformat(timespec="seconds")
+    return result.created_at.astimezone().isoformat(timespec="seconds")
+
+
+def _format_display_created_at(result: ReviewResult) -> str:
+    created_at = result.created_at.astimezone()
+    hour = created_at.strftime("%I").lstrip("0") or "0"
+    timezone_name = created_at.tzname() or created_at.strftime("UTC%z")
+    return (
+        f"{created_at.strftime('%B')} {created_at.day}, {created_at.year} "
+        f"at {hour}:{created_at.strftime('%M %p')} {timezone_name}"
+    )
+
+
+def _report_detail_rows(
+    result: ReviewResult,
+) -> tuple[tuple[_ReportDetail, ...], ...]:
+    details = (
+        _ReportDetail("Review ID", result.review.name),
+        _ReportDetail("Proof Lens", result.review.lens),
+        _ReportDetail("Mission", result.review.mission),
+        _ReportDetail("Review Protocol", result.review.protocol),
+        _ReportDetail("Output Schema", result.review.output_schema),
+        _ReportDetail("Configuration", result.prompt.config_name),
+        _ReportDetail("Configuration version", result.prompt.config_version),
+        _ReportDetail("Artifact", result.prompt.artifact_name),
+        _ReportDetail("Media type", result.prompt.artifact_media_type),
+        _ReportDetail("Created", _format_created_at(result)),
+        _ReportDetail("Provider", result.provider),
+        _ReportDetail("Model", result.model),
+        _ReportDetail("Response ID", _display_value(result.response_id)),
+        _ReportDetail("Input tokens", _display_value(result.usage.input_tokens)),
+        _ReportDetail("Output tokens", _display_value(result.usage.output_tokens)),
+        _ReportDetail("Total tokens", _display_value(result.usage.total_tokens)),
+        _ReportDetail("Observations", str(len(result.observations))),
+        _ReportDetail("Result format", REVIEW_RESULT_FORMAT),
+        _ReportDetail("Schema version", REVIEW_RESULT_SCHEMA_VERSION),
+    )
+    return tuple(tuple(details[index : index + 2]) for index in range(0, len(details), 2))
+
+
+def _display_value(value: object | None) -> str:
+    return "-" if value is None else str(value)
 
 
 def _markdown_inline(value: str) -> str:
@@ -279,7 +300,7 @@ def _markdown_inline(value: str) -> str:
 
 
 def _markdown_code(value: str) -> str:
-    escaped = html.escape(" ".join(value.splitlines()), quote=False)
+    escaped = _markdown_inline(value).replace("|", "&#124;")
     return f"`{escaped.replace('`', '&#96;')}`"
 
 
@@ -297,3 +318,50 @@ def _render_html_observation(index: int, question: str, evidence: str) -> str:
         <h3>{index}. {_html(question)}</h3>
         <p class="evidence"><strong>Evidence:</strong> {_html(evidence)}</p>
       </article>"""
+
+
+def _render_markdown_detail_table(
+    detail_rows: tuple[tuple[_ReportDetail, ...], ...],
+) -> str:
+    rows = [
+        "| Key | Value | Key | Value |",
+        "| :-- | :-- | :-- | :-- |",
+    ]
+    for details in detail_rows:
+        cells: list[str] = []
+        for detail in details:
+            cells.extend([f"**{_markdown_inline(detail.key)}**", _markdown_code(detail.value)])
+        while len(cells) < 4:
+            cells.append("")
+        rows.append(f"| {' | '.join(cells)} |")
+    return "\n".join(rows)
+
+
+def _render_html_detail_table(
+    detail_rows: tuple[tuple[_ReportDetail, ...], ...],
+) -> str:
+    rows = []
+    for details in detail_rows:
+        cells = []
+        for detail in details:
+            cells.extend(
+                [
+                    f'<th scope="row" class="detail-key">{_html(detail.key)}</th>',
+                    '<td class="detail-value">'
+                    f"<code>{_html(detail.value)}</code></td>",
+                ]
+            )
+        if len(details) == 1:
+            cells.extend(["<th></th>", "<td></td>"])
+        rows.append(f"  <tr>{''.join(cells)}</tr>")
+    rendered_rows = "\n".join(rows)
+    return (
+        '<table class="report-details">\n'
+        "  <caption>Review details</caption>\n"
+        "  <thead><tr><th>Key</th><th>Value</th>"
+        "<th>Key</th><th>Value</th></tr></thead>\n"
+        "  <tbody>\n"
+        f"{rendered_rows}\n"
+        "  </tbody>\n"
+        "</table>"
+    )

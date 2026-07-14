@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Sequence
 
 from proof_goblin.builder import PromptBuildError, PromptBuilder
+from proof_goblin.cache import ReviewCache, ReviewCacheError
 from proof_goblin.config import Config, ConfigError
 from proof_goblin.providers import (
     DEFAULT_OPENAI_MODEL,
@@ -45,6 +46,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ConfigError,
         PromptBuildError,
         ProviderError,
+        ReviewCacheError,
         ReportRenderError,
         ReviewError,
     ) as exc:
@@ -83,20 +85,26 @@ def _build_parser() -> argparse.ArgumentParser:
         "--format",
         choices=tuple(item.value for item in ReportFormat),
         help=(
-            "report format (default: inferred from --output extension, "
-            "otherwise text)"
+            "standard output format (default: text; file formats are inferred "
+            "from --output extensions)"
         ),
     )
     review_parser.add_argument(
         "-o",
         "--output",
+        action="append",
         metavar="PATH",
-        help="write the report to PATH instead of standard output",
+        help="write a report inferred from PATH; may be repeated",
     )
     review_parser.add_argument(
         "--include-prompt",
         action="store_true",
         help="include prompt text in JSON output",
+    )
+    review_parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="contact the provider and replace any matching cached result",
     )
     review_parser.set_defaults(handler=_review_command)
 
@@ -143,28 +151,68 @@ def _prompt_command(args: argparse.Namespace) -> int:
 
 
 def _review_command(args: argparse.Namespace) -> int:
-    report_format = _resolve_report_format(args.format, args.output)
-    if args.include_prompt and report_format is not ReportFormat.JSON:
-        raise CliError("--include-prompt requires --format json")
+    outputs = _resolve_outputs(args.format, args.output)
+    if args.include_prompt and not any(
+        report_format is ReportFormat.JSON for _, report_format in outputs
+    ):
+        raise CliError("--include-prompt requires JSON output")
 
     config, artifact, artifact_name, media_type = _load_inputs(args)
-    result = Reviewer(OpenAIProvider(model=args.model)).review(
-        config=config,
+    prompt = PromptBuilder(config).build(
         review=args.review,
         artifact=artifact,
         artifact_name=artifact_name,
         artifact_media_type=media_type,
     )
-
-    rendered = render_report(
-        result,
-        report_format,
-        include_prompt=args.include_prompt,
+    cache = ReviewCache()
+    cache_key = cache.key_for(prompt, provider="openai", model=args.model)
+    result = (
+        None
+        if args.refresh
+        else cache.load(
+            cache_key,
+            prompt=prompt,
+            provider="openai",
+            model=args.model,
+        )
     )
-    if args.output:
-        _write_report(Path(args.output), rendered)
-    else:
-        sys.stdout.write(rendered)
+    if result is None:
+        with cache.reserve(cache_key):
+            if not args.refresh:
+                result = cache.load(
+                    cache_key,
+                    prompt=prompt,
+                    provider="openai",
+                    model=args.model,
+                )
+            if result is None:
+                result = Reviewer(OpenAIProvider(model=args.model)).review(
+                    config=config,
+                    review=args.review,
+                    artifact=artifact,
+                    artifact_name=artifact_name,
+                    artifact_media_type=media_type,
+                )
+                cache.store(cache_key, result)
+
+    rendered_outputs = [
+        (
+            path,
+            render_report(
+                result,
+                report_format,
+                include_prompt=(
+                    args.include_prompt and report_format is ReportFormat.JSON
+                ),
+            ),
+        )
+        for path, report_format in outputs
+    ]
+    for path, rendered in rendered_outputs:
+        if path is None:
+            sys.stdout.write(rendered)
+        else:
+            _write_report(path, rendered)
     return 0
 
 
@@ -221,6 +269,21 @@ def _resolve_report_format(
         raise CliError(
             f"could not infer report format from {output_value!r}; use --format"
         ) from exc
+
+
+def _resolve_outputs(
+    format_value: str | None,
+    output_values: list[str] | None,
+) -> tuple[tuple[Path | None, ReportFormat], ...]:
+    if not output_values:
+        return ((None, _resolve_report_format(format_value, None)),)
+    if format_value:
+        raise CliError("--format cannot be combined with --output; use file extensions")
+
+    paths = tuple(Path(value) for value in output_values)
+    if len(set(paths)) != len(paths):
+        raise CliError("each --output path must be unique")
+    return tuple((path, _resolve_report_format(None, str(path))) for path in paths)
 
 
 def _write_report(path: Path, content: str) -> None:

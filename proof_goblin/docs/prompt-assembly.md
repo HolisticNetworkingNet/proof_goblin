@@ -1,7 +1,29 @@
 # Prompt Assembly
 
-`PromptBuilder` resolves a named review and combines its components with an
-artifact. Prompt assembly is deterministic and does not contact an AI provider.
+This procedure assembles a named review and a text artifact into an inspectable
+`Prompt`. It is the boundary between choosing review behavior and asking an AI
+provider to perform the review. Assembly is local and deterministic: it does
+not require an API key, make a network request, or incur provider charges.
+
+For definitions of Artifact, Proof Lens, Mission, Review Protocol, Output
+Schema, Named Review, and Assembled Prompt, see {doc}`Core Concepts <concepts>`.
+
+## Before you begin
+
+You need:
+
+- Python 3.11 or later with Proof Goblin installed;
+- a valid {doc}`configuration bundle <configuration>` in a `.pgcfg` file;
+- the identifier of a named review in that bundle; and
+- a text artifact to review.
+
+The example below uses files included in the source checkout and assumes that
+the current directory is the repository root. See {doc}`Getting Started
+<getting-started>` for installation instructions.
+
+## 1. Load the configuration and artifact
+
+Load the configuration once, then read the artifact explicitly as UTF-8 text:
 
 ```python
 from pathlib import Path
@@ -9,41 +31,121 @@ from pathlib import Path
 from proof_goblin import Config, PromptBuilder
 
 config = Config.load("proof_goblin/examples/restaurants.pgcfg")
-artifact = Path("proof_goblin/examples/homepage.html").read_text()
+artifact_path = Path("proof_goblin/examples/homepage.html")
+artifact = artifact_path.read_text(encoding="utf-8")
 
-prompt = PromptBuilder(config).build(
-    review="homepage_first_pass",
+builder = PromptBuilder(config)
+review_name = "homepage_first_pass"
+```
+
+`Config.load()` accepts a string or `Path` and returns a validated `Config`.
+Unreadable or malformed input raises `ConfigParseError`; content that does not
+conform to the supported configuration schema raises `ConfigValidationError`.
+
+## 2. Resolve and inspect the named review
+
+Resolution verifies that the named review and each component it references
+exist before an artifact is assembled:
+
+```python
+resolved = builder.resolve(review_name)
+
+print(resolved.definition.name)
+print(resolved.definition.title)
+print(resolved.definition.description)
+print(resolved.definition.lens)
+print(resolved.definition.mission)
+print(resolved.definition.protocol)
+print(resolved.definition.output_schema)
+```
+
+`resolve()` returns a `ResolvedReview`. Its `definition` preserves the review's
+identifier, presentation text, and component identifiers. Its `lens`,
+`mission`, `protocol`, and `output_schema` attributes contain the resolved
+component mappings that will be placed in the system prompt. An unknown review
+or component identifier raises `ComponentNotFoundError`.
+
+This step is useful when a host application needs to show users what a review
+will do before building or executing it.
+
+## 3. Build the prompt
+
+```python
+prompt = builder.build(
+    review=review_name,
     artifact=artifact,
-    artifact_name="homepage.html",
+    artifact_name=artifact_path.name,
     artifact_media_type="text/html",
 )
+```
 
+`build()` returns a `Prompt` with:
+
+- `system` — the resolved review instructions;
+- `user` — the artifact, its name, and its media type;
+- `review_name`, `config_name`, and `config_version`;
+- `config_sha256`; and
+- `artifact_name`, `artifact_media_type`, and `artifact_sha256`.
+
+The `system` and `user` values remain separate so a provider can preserve their
+message roles. Artifact content is confined to the user prompt and explicitly
+marked as untrusted review material. Empty artifact text, artifact names, or
+media types raise `PromptBuildError`.
+
+## 4. Inspect or render the result
+
+Printing a `Prompt` produces a readable representation with `[SYSTEM]` and
+`[USER]` sections:
+
+```python
 print(prompt)
 ```
 
-## Resolved reviews
+Use `render_prompt()` when the assembled prompt needs to be inspected, stored,
+or shared in a specific format:
 
-`PromptBuilder.resolve()` exposes the review definition, including its stable
-identifier, human-readable title and description, and the exact lens, mission,
-protocol, and output schema selected by the review. This makes both its
-presentation metadata and behavioral inputs inspectable before a prompt is
-generated.
+```python
+from proof_goblin import PromptFormat, render_prompt
 
-## Prompt roles
+markdown = render_prompt(prompt, PromptFormat.MARKDOWN)
+Path("homepage-prompt.md").write_text(markdown, encoding="utf-8")
+```
 
-An assembled `Prompt` keeps two roles separate:
+Text, versioned JSON, Markdown, and standalone HTML are supported. Every format
+contains the complete artifact and must be handled as sensitive content. See
+{doc}`Command-Line Interface <command-line-interface>` for the equivalent
+`proof-goblin prompt` command and {doc}`Report Formats <report-formats>` for
+the rendering and escaping contract.
 
-- `system` contains the resolved configuration and general review instructions;
-- `user` contains the artifact and its identifying information.
+## Determinism and provenance
 
-The system instructions explicitly treat the artifact as untrusted review
-material. Artifact content is never interpolated into the system instructions.
+Given the same validated configuration content, review identifier, exact
+artifact string, artifact name, and media type, `PromptBuilder` produces the
+same `system` and `user` strings and the same provenance values. No whitespace,
+line-ending, or Unicode normalization is performed.
 
-## Provenance
+The configuration digest is calculated from the original `.pgcfg` bytes. The
+artifact digest is calculated from the UTF-8 encoding of the artifact string.
+These SHA-256 values identify the inputs; they do not conceal the artifact or
+make a rendered prompt safe to publish.
 
-The assembled prompt records the review and configuration names, configuration
-version and digest, artifact name and media type, and the artifact's SHA-256
-digest. `Reviewer.review()` carries this information into the resulting
-`ReviewResult`. The result also retains the review's title, description, and
-resolved component names, so its serialized form is self-contained for a host
-application.
+## What happens next
+
+Prompt assembly ends with an inspectable `Prompt`. Choose the next path based
+on what the application needs to do:
+
+- **Inspect or share the prompt:** use `render_prompt()` or the
+  `proof-goblin prompt` command. No provider is contacted.
+- **Perform a review:** construct a `Reviewer` with a provider and call
+  `Reviewer.review()` with the same configuration, review identifier, artifact,
+  artifact name, and media type. The reviewer rebuilds the prompt internally,
+  calls the provider, validates the response, and returns a `ReviewResult`.
+- **Add Proof Goblin to an application:** continue with {doc}`Host Application
+  Integration <host-integration>` for the complete provider and serialization
+  workflow.
+
+`Reviewer.review()` does not accept a previously assembled `Prompt`. The
+separate assembly step is an inspection and validation boundary; the normal
+execution path deliberately owns prompt construction and result validation as
+one operation. See {doc}`OpenAI Provider <openai-provider>` before making a live
+OpenAI request.

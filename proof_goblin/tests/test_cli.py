@@ -113,6 +113,100 @@ def test_prompt_command_reads_standard_input(
     assert "# Documentation" in captured.out
 
 
+def test_prompt_command_prints_versioned_json(
+    artifact_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = cli.main(
+        [
+            "prompt",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--format",
+            "json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert exit_code == 0
+    assert captured.err == ""
+    assert payload["format"] == "proof-goblin-prompt"
+    assert payload["review"]["name"] == "homepage_first_pass"
+    assert payload["prompt"]["user"].endswith(
+        "--- END UNTRUSTED ARTIFACT ---"
+    )
+
+
+def test_prompt_writes_multiple_formats_without_provider_execution(
+    artifact_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = artifact_path.with_name("prompt.md")
+    html_path = artifact_path.with_name("prompt.html")
+    json_path = artifact_path.with_name("prompt.json")
+
+    exit_code = cli.main(
+        [
+            "prompt",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--output",
+            str(markdown_path),
+            "--output",
+            str(html_path),
+            "--output",
+            str(json_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert captured.out == ""
+    assert captured.err == ""
+    assert FakeProvider.calls == 0
+    assert markdown_path.read_text(encoding="utf-8").startswith(
+        "# Proof Goblin Prompt"
+    )
+    assert html_path.read_text(encoding="utf-8").startswith("<!doctype html>")
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert payload["artifact"]["name"] == "homepage.html"
+
+
+def test_prompt_rejects_format_with_file_output(
+    artifact_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output_path = artifact_path.with_name("prompt.md")
+
+    exit_code = cli.main(
+        [
+            "prompt",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--format",
+            "html",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert captured.out == ""
+    assert "--format cannot be combined with --output" in captured.err
+    assert not output_path.exists()
+
+
 def test_review_command_prints_text_result(
     artifact_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -456,6 +550,25 @@ def test_report_format_is_inferred_from_recognized_extension(
     expected: cli.ReportFormat,
 ) -> None:
     assert cli._resolve_report_format(None, f"review{extension}") is expected
+
+
+@pytest.mark.parametrize(
+    ("extension", "expected"),
+    [
+        (".txt", cli.PromptFormat.TEXT),
+        (".text", cli.PromptFormat.TEXT),
+        (".json", cli.PromptFormat.JSON),
+        (".md", cli.PromptFormat.MARKDOWN),
+        (".markdown", cli.PromptFormat.MARKDOWN),
+        (".html", cli.PromptFormat.HTML),
+        (".htm", cli.PromptFormat.HTML),
+    ],
+)
+def test_prompt_format_is_inferred_from_recognized_extension(
+    extension: str,
+    expected: cli.PromptFormat,
+) -> None:
+    assert cli._resolve_prompt_format(None, f"prompt{extension}") is expected
 
 
 def test_failed_atomic_write_preserves_existing_report(

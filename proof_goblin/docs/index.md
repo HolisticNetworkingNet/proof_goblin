@@ -15,9 +15,9 @@ versioned, and reproduced.
 overview
 concepts
 getting-started
+bundled-documentation-reviews
 command-line-interface
 configuration
-documentation-review-configuration
 prompt-assembly
 openai-provider
 report-formats

@@ -55,6 +55,18 @@ def test_documentation_config_contains_expected_lenses(
             "technical_writing_quality",
         ),
         (
+            "technical_writer_concept_reference",
+            "Technical Writing Concept Reference Review",
+            "technical_writer",
+            "conceptual_reference_quality",
+        ),
+        (
+            "django_developer_concept_reference",
+            "Developer Concept Reference Review",
+            "django_python_developer",
+            "conceptual_reference_quality",
+        ),
+        (
             "front_end_readability",
             "Front-End Readability Review",
             "technical_writer",
@@ -85,6 +97,8 @@ def test_documentation_reviews_resolve_expected_components(
         "business_owner_first_pass",
         "django_developer_first_pass",
         "technical_writer_first_pass",
+        "technical_writer_concept_reference",
+        "django_developer_concept_reference",
         "front_end_readability",
     ],
 )
@@ -100,3 +114,24 @@ def test_documentation_reviews_build_prompts(
 
     assert prompt.system
     assert artifact in prompt.user
+
+
+@pytest.mark.parametrize(
+    "review_name",
+    [
+        "technical_writer_concept_reference",
+        "django_developer_concept_reference",
+    ],
+)
+def test_concept_reference_reviews_preserve_reference_purpose(
+    documentation_config: Config,
+    review_name: str,
+) -> None:
+    prompt = PromptBuilder(documentation_config).build(
+        review=review_name,
+        artifact="# Terms\n\n## Proof Lens\n\nA review perspective.",
+    )
+
+    assert "conceptual or terminology reference" in prompt.system
+    assert "not as a tutorial or procedural guide" in prompt.system
+    assert "Do not require setup instructions" in prompt.system

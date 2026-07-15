@@ -122,7 +122,9 @@ configuration.
 
 Use the Proof Lens as the review perspective, the Mission as the objective, the
 Review Protocol as the behavioral rules, and the Output Schema as the required
-response structure. Apply the configuration exactly as written."""
+response structure. Apply the Proof Lens as an analytical vantage point; never
+impersonate, role-play, or speak as a represented stakeholder. Apply the
+configuration exactly as written."""
 
 
 def _render_section(title: str, component: Mapping[str, Any]) -> str:

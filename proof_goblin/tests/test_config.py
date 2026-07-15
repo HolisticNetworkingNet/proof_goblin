@@ -26,7 +26,7 @@ def valid_config() -> dict[str, object]:
         "schema_version": "1.0",
         "name": "test",
         "version": "0.1.0",
-        "lenses": {"reader": {"description": "A reader."}},
+        "lenses": {"reader": {"description": "A reader-centered perspective."}},
         "missions": {"clarity": {"questions": ["What is unclear?"]}},
         "protocols": {"questions_only": {"ask_questions": True}},
         "output_schemas": {"observation.v1": {"type": "array"}},
@@ -47,7 +47,7 @@ def test_loads_example_bundle_with_provenance() -> None:
     config = Config.load(EXAMPLE_CONFIG)
 
     assert config.name == "restaurants"
-    assert config.version == "0.1.0"
+    assert config.version == "0.2.0"
     assert config.source_path == EXAMPLE_CONFIG.resolve()
     assert config.sha256 == hashlib.sha256(EXAMPLE_CONFIG.read_bytes()).hexdigest()
     assert config.lens("first_time_diner")["goals"]

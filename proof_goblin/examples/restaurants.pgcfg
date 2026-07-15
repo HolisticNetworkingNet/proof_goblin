@@ -2,15 +2,15 @@
   "format": "proof-goblin-config",
   "schema_version": "1.0",
   "name": "restaurants",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Reusable review definitions for restaurant websites.",
   "lenses": {
     "first_time_diner": {
-      "description": "A potential customer unfamiliar with the restaurant.",
+      "description": "A first-visit customer perspective with no prior familiarity with the restaurant.",
       "circumstances": [
-        "Arrived from a search result or recommendation",
-        "May be comparing several restaurants",
-        "Has limited patience"
+        "The site is encountered through a search result or recommendation",
+        "Several restaurants may be compared",
+        "Available attention may be limited"
       ],
       "goals": [
         "Understand the restaurant's identity",
@@ -19,7 +19,7 @@
       ]
     },
     "restaurant_owner": {
-      "description": "An owner concerned with how accurately the site represents the business.",
+      "description": "A business-accuracy perspective focused on how faithfully the site represents the restaurant.",
       "goals": [
         "Confirm that important offerings are visible",
         "Identify misleading or outdated information",
@@ -42,7 +42,10 @@
       "provide_solutions": false,
       "ask_questions": true,
       "require_evidence": true,
-      "avoid_speculation": true
+      "avoid_speculation": true,
+      "instructions": [
+        "Apply the Proof Lens as an analytical vantage point; never impersonate, role-play, or speak as a represented stakeholder"
+      ]
     }
   },
   "output_schemas": {

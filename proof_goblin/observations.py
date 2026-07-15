@@ -6,12 +6,12 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Mapping
+from datetime import UTC, datetime
+from typing import Any
 
 from proof_goblin.builder import Prompt
-
 
 REVIEW_RESULT_FORMAT = "proof-goblin-review-result"
 REVIEW_RESULT_SCHEMA_VERSION = "1.0"
@@ -63,7 +63,7 @@ class ReviewResult:
     response_id: str | None
     usage: TokenUsage
     raw_output: Mapping[str, Any]
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         if self.created_at.tzinfo is None or self.created_at.utcoffset() is None:
@@ -251,7 +251,7 @@ class ReviewResult:
 
 
 def _format_datetime(value: datetime) -> str:
-    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def _require_mapping(record: Mapping[str, Any], field: str) -> Mapping[str, Any]:
@@ -274,9 +274,7 @@ def _require_string(record: Mapping[str, Any], field: str) -> str:
     return value
 
 
-def _optional_non_negative_int(
-    record: Mapping[str, Any], field: str
-) -> int | None:
+def _optional_non_negative_int(record: Mapping[str, Any], field: str) -> int | None:
     value = record.get(field)
     if value is None:
         return None

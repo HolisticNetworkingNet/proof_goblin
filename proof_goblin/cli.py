@@ -10,28 +10,28 @@ import mimetypes
 import os
 import sys
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
-from proof_goblin.builder import PromptBuildError, PromptBuilder
+from proof_goblin.builder import PromptBuilder, PromptBuildError
 from proof_goblin.cache import ReviewCache, ReviewCacheError
 from proof_goblin.config import Config, ConfigError
-from proof_goblin.providers import (
-    DEFAULT_OPENAI_MODEL,
-    OpenAIProvider,
-    ProviderError,
-)
 from proof_goblin.prompt_rendering import (
     PromptFormat,
     PromptRenderError,
     render_prompt,
+)
+from proof_goblin.providers import (
+    DEFAULT_OPENAI_MODEL,
+    OpenAIProvider,
+    ProviderError,
 )
 from proof_goblin.reports import (
     ReportFormat,
     ReportRenderError,
     render_report,
 )
-from proof_goblin.reviewer import ReviewError, Reviewer
+from proof_goblin.reviewer import Reviewer, ReviewError
 
 
 class CliError(RuntimeError):
@@ -97,10 +97,7 @@ def _build_parser() -> argparse.ArgumentParser:
     review_parser.add_argument(
         "--model",
         default=os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL),
-        help=(
-            "OpenAI model name (default: OPENAI_MODEL or "
-            f"{DEFAULT_OPENAI_MODEL})"
-        ),
+        help=(f"OpenAI model name (default: OPENAI_MODEL or {DEFAULT_OPENAI_MODEL})"),
     )
     review_parser.add_argument(
         "--format",
@@ -169,8 +166,7 @@ def _prompt_command(args: argparse.Namespace) -> int:
         artifact_media_type=media_type,
     )
     rendered_outputs = [
-        (path, render_prompt(prompt, prompt_format))
-        for path, prompt_format in outputs
+        (path, render_prompt(prompt, prompt_format)) for path, prompt_format in outputs
     ]
     for path, rendered in rendered_outputs:
         if path is None:
@@ -264,7 +260,9 @@ def _read_artifact(path_value: str) -> tuple[str, str]:
         try:
             return sys.stdin.read(), "stdin"
         except OSError as exc:
-            raise CliError(f"could not read artifact from standard input: {exc}") from exc
+            raise CliError(
+                f"could not read artifact from standard input: {exc}"
+            ) from exc
 
     path = Path(path_value)
     try:
@@ -364,9 +362,7 @@ def _resolve_prompt_outputs(
     paths = tuple(Path(value) for value in output_values)
     if len(set(paths)) != len(paths):
         raise CliError("each --output path must be unique")
-    return tuple(
-        (path, _resolve_prompt_format(None, str(path))) for path in paths
-    )
+    return tuple((path, _resolve_prompt_format(None, str(path))) for path in paths)
 
 
 def _write_output(path: Path, content: str, *, noun: str) -> None:

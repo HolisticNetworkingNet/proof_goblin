@@ -12,17 +12,14 @@ from proof_goblin import (
     Config,
     OpenAIProvider,
     PromptBuilder,
-    ProviderRefusalError,
     ProviderQuotaError,
     ProviderRateLimitError,
+    ProviderRefusalError,
     ProviderRequestError,
     ProviderResponseError,
 )
 
-
-EXAMPLE_CONFIG = (
-    Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
-)
+EXAMPLE_CONFIG = Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
 
 
 class FakeResponses:

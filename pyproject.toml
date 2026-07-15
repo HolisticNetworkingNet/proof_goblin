@@ -18,6 +18,9 @@ dependencies = [
 proof-goblin = "proof_goblin.cli:main"
 
 [project.optional-dependencies]
+dev = [
+    "ruff>=0.12",
+]
 docs = [
     "furo>=2024.8.6",
     "myst-parser>=4.0",
@@ -35,3 +38,16 @@ include = ["proof_goblin*"]
 
 [tool.setuptools.package-data]
 proof_goblin = ["configs/*.pgcfg", "schemas/*.json"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+extend-exclude = ["proof_goblin/docs/_build"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

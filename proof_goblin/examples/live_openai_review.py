@@ -10,7 +10,6 @@ from pathlib import Path
 
 from proof_goblin import Config, OpenAIProvider, ProviderError, Reviewer
 
-
 EXAMPLES = Path(__file__).parent
 
 

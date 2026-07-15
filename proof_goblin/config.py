@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping
-
+from typing import Any
 
 CONFIG_FORMAT = "proof-goblin-config"
 SUPPORTED_SCHEMA_VERSIONS = frozenset({"1.0"})
@@ -253,9 +253,7 @@ def _require_string(
     return value
 
 
-def _require_exact_value(
-    mapping: Mapping[str, Any], key: str, expected: str
-) -> None:
+def _require_exact_value(mapping: Mapping[str, Any], key: str, expected: str) -> None:
     value = mapping.get(key)
     if value != expected:
         raise ConfigValidationError(
@@ -299,6 +297,4 @@ def _get_component(
     try:
         return collection[name]
     except KeyError as exc:
-        raise ComponentNotFoundError(
-            f"Unknown {component_type} {name!r}"
-        ) from exc
+        raise ComponentNotFoundError(f"Unknown {component_type} {name!r}") from exc

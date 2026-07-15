@@ -6,20 +6,20 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from proof_goblin.builder import Prompt
 from proof_goblin.observations import TokenUsage
 from proof_goblin.providers.base import (
-    ProviderRefusalError,
     ProviderQuotaError,
     ProviderRateLimitError,
+    ProviderRefusalError,
     ProviderRequestError,
     ProviderResponse,
     ProviderResponseError,
     ProviderUnavailableError,
 )
-
 
 DEFAULT_OPENAI_MODEL = "gpt-5.6"
 
@@ -78,7 +78,9 @@ class OpenAIProvider:
                 f"column {exc.colno}: {exc.msg}"
             ) from exc
         if not isinstance(data, dict):
-            raise ProviderResponseError("OpenAI structured output must be a JSON object")
+            raise ProviderResponseError(
+                "OpenAI structured output must be a JSON object"
+            )
 
         return ProviderResponse(
             data=data,
@@ -119,7 +121,9 @@ def _translate_request_error(exc: Exception) -> ProviderResponseError:
     return ProviderResponseError(f"OpenAI request failed: {exc}")
 
 
-def _validate_strict_schema(schema: Mapping[str, Any], path: str = "output schema") -> None:
+def _validate_strict_schema(
+    schema: Mapping[str, Any], path: str = "output schema"
+) -> None:
     if schema.get("type") != "object":
         raise ProviderRequestError(f"{path} root must have type 'object'")
     _validate_object_constraints(schema, path)

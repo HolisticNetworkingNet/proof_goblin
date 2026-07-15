@@ -11,9 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from proof_goblin import ProviderResponse, TokenUsage
-from proof_goblin import cli
-
+from proof_goblin import ProviderResponse, TokenUsage, cli
 
 PACKAGE_ROOT = Path(__file__).parents[1]
 EXAMPLE_CONFIG = PACKAGE_ROOT / "examples" / "restaurants.pgcfg"
@@ -136,9 +134,7 @@ def test_prompt_command_prints_versioned_json(
     assert captured.err == ""
     assert payload["format"] == "proof-goblin-prompt"
     assert payload["review"]["name"] == "homepage_first_pass"
-    assert payload["prompt"]["user"].endswith(
-        "--- END UNTRUSTED ARTIFACT ---"
-    )
+    assert payload["prompt"]["user"].endswith("--- END UNTRUSTED ARTIFACT ---")
 
 
 def test_prompt_writes_multiple_formats_without_provider_execution(
@@ -171,9 +167,7 @@ def test_prompt_writes_multiple_formats_without_provider_execution(
     assert captured.out == ""
     assert captured.err == ""
     assert FakeProvider.calls == 0
-    assert markdown_path.read_text(encoding="utf-8").startswith(
-        "# Proof Goblin Prompt"
-    )
+    assert markdown_path.read_text(encoding="utf-8").startswith("# Proof Goblin Prompt")
     assert html_path.read_text(encoding="utf-8").startswith("<!doctype html>")
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["artifact"]["name"] == "homepage.html"
@@ -400,9 +394,10 @@ def test_review_writes_multiple_formats_from_one_provider_response(
     assert FakeProvider.calls == 1
     assert markdown_path.read_text(encoding="utf-8").startswith("# Restaurant")
     assert html_path.read_text(encoding="utf-8").startswith("<!doctype html>")
-    assert json.loads(json_path.read_text(encoding="utf-8"))["execution"][
-        "response_id"
-    ] == "resp_cli_test"
+    assert (
+        json.loads(json_path.read_text(encoding="utf-8"))["execution"]["response_id"]
+        == "resp_cli_test"
+    )
 
 
 def test_review_reuses_cached_result_for_later_format(
@@ -490,16 +485,19 @@ def test_cached_result_excludes_prompt_and_artifact_body(
 ) -> None:
     monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
 
-    assert cli.main(
-        [
-            "review",
-            str(artifact_path),
-            "--config",
-            str(EXAMPLE_CONFIG),
-            "--review",
-            "homepage_first_pass",
-        ]
-    ) == 0
+    assert (
+        cli.main(
+            [
+                "review",
+                str(artifact_path),
+                "--config",
+                str(EXAMPLE_CONFIG),
+                "--review",
+                "homepage_first_pass",
+            ]
+        )
+        == 0
+    )
 
     cache_files = list((tmp_path / "cache").glob("*.json"))
     assert len(cache_files) == 1

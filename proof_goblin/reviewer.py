@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from jsonschema import SchemaError, ValidationError, validators
 
@@ -98,9 +99,7 @@ def _read_observations(data: Mapping[str, Any]) -> tuple[Observation, ...]:
     observations: list[Observation] = []
     for index, value in enumerate(values):
         if not isinstance(value, dict):
-            raise ReviewOutputValidationError(
-                f"observations.{index} must be an object"
-            )
+            raise ReviewOutputValidationError(f"observations.{index} must be an object")
         question = value.get("question")
         evidence = value.get("evidence")
         if not isinstance(question, str) or not isinstance(evidence, str):

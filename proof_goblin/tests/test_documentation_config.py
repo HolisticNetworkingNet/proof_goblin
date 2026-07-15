@@ -10,10 +10,7 @@ import pytest
 from proof_goblin.builder import PromptBuilder
 from proof_goblin.config import Config
 
-
-CONFIG_PATH = (
-    Path(__file__).resolve().parents[1] / "configs" / "documentation.pgcfg"
-)
+CONFIG_PATH = Path(__file__).resolve().parents[1] / "configs" / "documentation.pgcfg"
 
 
 @pytest.fixture

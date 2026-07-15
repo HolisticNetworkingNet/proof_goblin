@@ -13,7 +13,6 @@ from typing import Any
 
 from proof_goblin.builder import Prompt
 
-
 PROMPT_DOCUMENT_FORMAT = "proof-goblin-prompt"
 PROMPT_DOCUMENT_SCHEMA_VERSION = "1.0"
 
@@ -81,12 +80,15 @@ def _prompt_record(prompt: Prompt) -> dict[str, Any]:
 
 
 def _render_json(prompt: Prompt) -> str:
-    return json.dumps(
-        _prompt_record(prompt),
-        ensure_ascii=False,
-        indent=2,
-        sort_keys=True,
-    ) + "\n"
+    return (
+        json.dumps(
+            _prompt_record(prompt),
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
 
 
 def _render_markdown(prompt: Prompt) -> str:
@@ -139,7 +141,7 @@ def _render_html(prompt: Prompt) -> str:
     )
     rows = "\n".join(
         "        <tr>"
-        f"<th scope=\"row\">{html.escape(key)}</th>"
+        f'<th scope="row">{html.escape(key)}</th>'
         f"<td><code>{html.escape(value)}</code></td>"
         "</tr>"
         for key, value in details
@@ -223,9 +225,7 @@ def _render_html(prompt: Prompt) -> str:
 
 
 def _markdown_inline(value: str) -> str:
-    return html.escape(value, quote=False).replace("[", "&#91;").replace(
-        "]", "&#93;"
-    )
+    return html.escape(value, quote=False).replace("[", "&#91;").replace("]", "&#93;")
 
 
 def _markdown_code(value: str) -> str:

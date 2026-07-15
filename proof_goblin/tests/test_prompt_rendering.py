@@ -18,11 +18,8 @@ from proof_goblin import (
     render_prompt,
 )
 
-
 EXAMPLE_CONFIG = Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
-PROMPT_SCHEMA = (
-    Path(__file__).parents[1] / "schemas" / "prompt.v1.schema.json"
-)
+PROMPT_SCHEMA = Path(__file__).parents[1] / "schemas" / "prompt.v1.schema.json"
 
 
 @pytest.fixture

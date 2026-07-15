@@ -6,9 +6,10 @@
 from __future__ import annotations
 
 import html
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Mapping, Protocol
+from typing import Protocol
 
 from proof_goblin.observations import (
     REVIEW_RESULT_FORMAT,
@@ -288,7 +289,9 @@ def _report_detail_rows(
         _ReportDetail("Result format", REVIEW_RESULT_FORMAT),
         _ReportDetail("Schema version", REVIEW_RESULT_SCHEMA_VERSION),
     )
-    return tuple(tuple(details[index : index + 2]) for index in range(0, len(details), 2))
+    return tuple(
+        tuple(details[index : index + 2]) for index in range(0, len(details), 2)
+    )
 
 
 def _display_value(value: object | None) -> str:
@@ -338,7 +341,9 @@ def _render_markdown_detail_table(
     for details in detail_rows:
         cells: list[str] = []
         for detail in details:
-            cells.extend([f"**{_markdown_inline(detail.key)}**", _markdown_code(detail.value)])
+            cells.extend(
+                [f"**{_markdown_inline(detail.key)}**", _markdown_code(detail.value)]
+            )
         while len(cells) < 4:
             cells.append("")
         rows.append(f"| {' | '.join(cells)} |")
@@ -355,8 +360,7 @@ def _render_html_detail_table(
             cells.extend(
                 [
                     f'<th scope="row" class="detail-key">{_html(detail.key)}</th>',
-                    '<td class="detail-value">'
-                    f"<code>{_html(detail.value)}</code></td>",
+                    f'<td class="detail-value"><code>{_html(detail.value)}</code></td>',
                 ]
             )
         if len(details) == 1:

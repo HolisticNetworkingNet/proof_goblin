@@ -11,15 +11,14 @@ import os
 import stat
 import sys
 import tempfile
+from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from os import replace as replace_file
 from pathlib import Path
-from typing import Iterator
 
 from proof_goblin.builder import Prompt
 from proof_goblin.observations import ReviewResult, ReviewResultProvenanceError
-
 
 CACHE_KEY_VERSION = "2"
 CACHE_DIRECTORY_ENV = "PROOF_GOBLIN_CACHE_DIR"
@@ -170,7 +169,9 @@ class ReviewCache:
                     temporary_path.unlink(missing_ok=True)
                 except OSError:
                     pass
-            raise ReviewCacheError(f"could not write review cache {path}: {exc}") from exc
+            raise ReviewCacheError(
+                f"could not write review cache {path}: {exc}"
+            ) from exc
 
     @contextmanager
     def reserve(self, key: str) -> Iterator[None]:
@@ -208,9 +209,9 @@ class ReviewCache:
             self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
             if not existed:
                 self.directory.chmod(0o700)
-            elif os.name != "nt" and stat.S_IMODE(
-                self.directory.stat().st_mode
-            ) & 0o077:
+            elif (
+                os.name != "nt" and stat.S_IMODE(self.directory.stat().st_mode) & 0o077
+            ):
                 raise ReviewCacheError(
                     f"review cache {self.directory} must have user-only permissions"
                 )
@@ -231,13 +232,15 @@ class ReviewCache:
         except FileExistsError:
             raise
         except OSError as exc:
-            raise ReviewCacheError(f"could not reserve review cache {path}: {exc}") from exc
+            raise ReviewCacheError(
+                f"could not reserve review cache {path}: {exc}"
+            ) from exc
 
     @staticmethod
     def _remove_stale_lock(path: Path) -> bool:
         try:
-            modified_at = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
-            if datetime.now(timezone.utc) - modified_at < STALE_LOCK_AGE:
+            modified_at = datetime.fromtimestamp(path.stat().st_mtime, UTC)
+            if datetime.now(UTC) - modified_at < STALE_LOCK_AGE:
                 return False
             path.unlink()
             return True

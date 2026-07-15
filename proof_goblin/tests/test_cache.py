@@ -76,7 +76,7 @@ def test_cache_key_includes_prompt_provenance(
     )
 
 
-def test_cache_round_trip_uses_private_files(tmp_path: Path) -> None:
+def test_cache_round_trip(tmp_path: Path) -> None:
     cache = ReviewCache(tmp_path / "cache")
     result = make_result()
     key = cache.key_for(result.prompt, provider="openai", model=result.model)
@@ -96,6 +96,24 @@ def test_cache_round_trip_uses_private_files(tmp_path: Path) -> None:
 
     assert loaded is not None
     assert loaded.to_dict() == result.to_dict()
+
+
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="Windows does not expose POSIX permission bits",
+)
+def test_cache_uses_private_posix_permissions(tmp_path: Path) -> None:
+    cache = ReviewCache(tmp_path / "cache")
+    result = make_result()
+    key = cache.key_for(result.prompt, provider="openai", model=result.model)
+
+    cache.store(
+        key,
+        result,
+        request_provider="openai",
+        request_model=result.model,
+    )
+
     assert (tmp_path / "cache").stat().st_mode & 0o777 == 0o700
     assert (tmp_path / "cache" / f"{key}.json").stat().st_mode & 0o777 == 0o600
 

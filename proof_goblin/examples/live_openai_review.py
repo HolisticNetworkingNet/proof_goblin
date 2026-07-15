@@ -1,6 +1,3 @@
-# Copyright (c) 2025 We Build Reactions.
-# Proprietary and confidential. See LICENSE for details.
-
 """Run the restaurant example against OpenAI for a manual smoke test."""
 
 from __future__ import annotations

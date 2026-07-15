@@ -28,14 +28,17 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - name: Upgrade the installer
-        run: python -m pip install --upgrade pip
+      - name: Upgrade packaging tools
+        run: python -m pip install --upgrade pip "setuptools>=83.0.0" wheel
 
       - name: Install every dependency group
         run: python -m pip install ".[dev,docs,openai,security,test]"
 
       - name: Remove the local project distribution
         run: python -m pip uninstall --yes proof-goblin
+
+      - name: Verify dependency consistency
+        run: python -m pip check
 
       - name: Audit installed dependencies
         run: >-

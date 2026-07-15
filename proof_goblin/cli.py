@@ -1,5 +1,4 @@
-# Copyright (c) 2025 We Build Reactions.
-# Proprietary and confidential. See LICENSE for details.
+
 
 """Command-line interface for Proof Goblin."""
 

@@ -83,6 +83,42 @@ proof-goblin --help
 python -m sphinx -W --keep-going -b html proof_goblin/docs proof_goblin/docs/_build/html
 ```
 
+## Repository merge policy
+
+The `main` branch is governed by the active **Protect main** GitHub repository
+ruleset. Its version-controlled representation is
+`.github/rulesets/main.json`. Changes to the live ruleset and this file must be
+reviewed and updated together.
+
+Normal changes to `main` must arrive through a pull request whose branch is
+current with `main`. The following complete pull-request checks are required:
+
+- `Ruff lint and format`;
+- `Strict documentation build`;
+- `Tests (ubuntu-latest, Python 3.11)`;
+- `Tests (ubuntu-latest, Python 3.12)`;
+- `Tests (ubuntu-latest, Python 3.13)`;
+- `Tests (ubuntu-latest, Python 3.14)`;
+- `Tests (macos-latest, Python 3.14)`; and
+- `Tests (windows-latest, Python 3.14)`.
+
+The fast `Ruff and pytest error checks` push job still runs on every branch but
+is not an additional required pull-request gate because its Ruff and Python
+3.11 coverage duplicates the complete checks. Unresolved review conversations
+block merging. The current contributor model requires no approving review, no
+signed commits, and no linear history; merge commits remain the repository's
+normal merge method. The ruleset also blocks deletion and force pushes of
+`main`.
+
+Only active `HolisticNetworkingNet` organization owners have a pull-request-only
+ruleset bypass. It cannot be used to push directly to `main`, delete it, or force
+push it. The bypass is an emergency mechanism, not an alternate normal
+workflow. It may be used only to repair broken required-check infrastructure or
+apply an urgent security correction when the normal gates cannot operate. The
+owner using it must open or update a tracking issue with the reason, affected
+commit, checks performed, and follow-up work before merging the emergency pull
+request.
+
 ## Documentation conventions
 
 Documentation source files use MyST Markdown and live in `proof_goblin/docs/`.

@@ -19,7 +19,8 @@ proof-goblin = "proof_goblin.cli:main"
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.12",
+    "build>=1.2",
+    "ruff==0.15.21",
 ]
 docs = [
     "furo>=2024.8.6",

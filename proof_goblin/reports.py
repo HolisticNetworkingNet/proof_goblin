@@ -1,5 +1,3 @@
-
-
 """Provider-neutral rendering for distributable review reports."""
 
 from __future__ import annotations

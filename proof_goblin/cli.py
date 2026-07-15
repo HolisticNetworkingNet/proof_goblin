@@ -1,5 +1,3 @@
-
-
 """Command-line interface for Proof Goblin."""
 
 from __future__ import annotations

@@ -1,5 +1,3 @@
-
-
 """Run the restaurant example against OpenAI for a manual smoke test."""
 
 from __future__ import annotations

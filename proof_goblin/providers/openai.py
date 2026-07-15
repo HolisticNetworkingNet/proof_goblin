@@ -1,5 +1,3 @@
-
-
 """OpenAI Responses API adapter."""
 
 from __future__ import annotations

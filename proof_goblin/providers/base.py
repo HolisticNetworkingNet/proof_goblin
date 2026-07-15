@@ -1,5 +1,3 @@
-
-
 """Provider-neutral review request and response types."""
 
 from __future__ import annotations

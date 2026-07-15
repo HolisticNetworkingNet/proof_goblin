@@ -1,5 +1,3 @@
-
-
 """Tests for the bundled documentation review configuration."""
 
 from pathlib import Path

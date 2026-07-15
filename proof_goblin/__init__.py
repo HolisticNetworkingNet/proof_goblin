@@ -1,5 +1,3 @@
-
-
 """Proof Goblin public package interface."""
 
 from proof_goblin.builder import (

@@ -1,5 +1,3 @@
-
-
 """Load and validate portable Proof Goblin configuration bundles."""
 
 from __future__ import annotations

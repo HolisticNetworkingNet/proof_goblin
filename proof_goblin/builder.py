@@ -1,5 +1,3 @@
-
-
 """Resolve review definitions and assemble inspectable prompts."""
 
 from __future__ import annotations

@@ -1,5 +1,3 @@
-
-
 """Render assembled prompts for inspection, storage, and sharing."""
 
 from __future__ import annotations

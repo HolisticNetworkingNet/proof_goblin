@@ -1,5 +1,3 @@
-
-
 """Structured review observations and their provenance."""
 
 from __future__ import annotations

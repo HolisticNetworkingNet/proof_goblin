@@ -1,5 +1,3 @@
-
-
 """Model-provider interfaces and adapters."""
 
 from proof_goblin.providers.base import (

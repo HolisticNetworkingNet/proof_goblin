@@ -48,25 +48,25 @@ ruff check --fix .
 ruff format .
 ```
 
-Review the resulting diff and run the test and documentation checks after any
-automated fix. Static type checking is not part of the current Ruff policy and
-remains a separate future design decision.
+Review the resulting diff and rerun Ruff, pytest, and the strict documentation
+build after any automated fix. Static type checking is not part of the current
+Ruff policy and remains a separate future design decision.
 
 ## Automated checks
 
 GitHub Actions separates fast feedback from complete pull-request validation:
 
 - **Push checks** run on every push to every branch and execute `ruff check .`
-  plus the test suite with warnings treated as errors on Python 3.11. This
-  catches routine Python, behavioral, and deprecation errors quickly without
-  duplicating the full platform and Python-version matrix on every intermediate
-  commit.
+  plus `python -m pytest -q -W error` on Python 3.11. This catches routine
+  Python, behavioral, and deprecation errors quickly without duplicating the
+  full platform and Python-version matrix on every intermediate commit.
 - **Pull request checks** run when a pull request is opened and whenever its
   branch is updated, reopened, or marked ready for review. They run Ruff lint
-  and format checks, the complete warnings-as-errors test matrix, an installed
-  command-line entry-point smoke test, and the strict documentation build.
+  (`ruff check .`), Ruff formatting (`ruff format --check .`), the complete
+  warnings-as-errors pytest matrix, `proof-goblin --help` in every matrix lane,
+  and the strict Sphinx documentation build.
 
-Ubuntu is the primary CI platform. The pull-request test matrix covers every
+Ubuntu is the primary CI platform. The pull-request pytest matrix covers every
 supported CPython minor version from 3.11 through 3.14 on Ubuntu and adds a
 representative Python 3.14 run on macOS. A Windows Python 3.14 lane is included
 as inexpensive compatibility coverage, but Windows is not currently a declared
@@ -102,13 +102,16 @@ current with `main`. The following complete pull-request checks are required:
 - `Tests (macos-latest, Python 3.14)`; and
 - `Tests (windows-latest, Python 3.14)`.
 
+Each required `Tests` job runs pytest with warnings treated as errors and then
+verifies the installed `proof-goblin` command-line entry point.
+
 The fast `Ruff and pytest error checks` push job still runs on every branch but
-is not an additional required pull-request gate because its Ruff and Python
-3.11 coverage duplicates the complete checks. Unresolved review conversations
-block merging. The current contributor model requires no approving review, no
-signed commits, and no linear history; merge commits remain the repository's
-normal merge method. The ruleset also blocks deletion and force pushes of
-`main`.
+is not an additional required pull-request gate because its Ruff lint and
+Python 3.11 pytest coverage duplicate the complete checks. Unresolved review
+conversations block merging. The current contributor model requires no
+approving review, no signed commits, and no linear history; merge commits remain
+the repository's normal merge method. The ruleset also blocks deletion and
+force pushes of `main`.
 
 Only active `HolisticNetworkingNet` organization owners have a pull-request-only
 ruleset bypass. It cannot be used to push directly to `main`, delete it, or force

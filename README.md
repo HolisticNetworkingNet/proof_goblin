@@ -60,3 +60,8 @@ proof-goblin review proof_goblin/docs/overview.md \
   --config proof_goblin/configs/documentation.pgcfg \
   --review technical_writer_first_pass
 ```
+## License
+
+Proof Goblin is licensed under the MIT License.
+
+See the [LICENSE](LICENSE) file for the full license text.

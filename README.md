@@ -1,5 +1,8 @@
 # Proof Goblin
 
+[![Push checks](https://github.com/HolisticNetworkingNet/proof_goblin/actions/workflows/push-checks.yml/badge.svg?branch=main)](https://github.com/HolisticNetworkingNet/proof_goblin/actions/workflows/push-checks.yml)
+[![Pull request checks](https://github.com/HolisticNetworkingNet/proof_goblin/actions/workflows/pull-request-checks.yml/badge.svg?event=pull_request)](https://github.com/HolisticNetworkingNet/proof_goblin/actions/workflows/pull-request-checks.yml)
+
 Proof Goblin is a configurable AI review engine for analyzing documents, websites, and other artifacts through reusable review lenses.
 
 Rather than generating edits, Proof Goblin is designed to ask questions, identify ambiguities, and surface observations from the perspective of a specific audience or stakeholder. Review behavior is assembled from portable configuration files that define Proof Lenses, review missions, protocols, and output schemas, making reviews reproducible, versionable, and suitable for automation.

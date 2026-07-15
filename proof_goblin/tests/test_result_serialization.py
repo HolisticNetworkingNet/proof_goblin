@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path
 
@@ -21,10 +21,7 @@ from proof_goblin import (
     TokenUsage,
 )
 
-
-EXAMPLE_CONFIG = (
-    Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
-)
+EXAMPLE_CONFIG = Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
 
 
 def make_result() -> ReviewResult:
@@ -67,14 +64,12 @@ def make_result() -> ReviewResult:
                 }
             ]
         },
-        created_at=datetime(2026, 7, 13, 18, 30, tzinfo=timezone.utc),
+        created_at=datetime(2026, 7, 13, 18, 30, tzinfo=UTC),
     )
 
 
 def result_schema() -> dict[str, object]:
-    resource = files("proof_goblin").joinpath(
-        "schemas/review-result.v1.schema.json"
-    )
+    resource = files("proof_goblin").joinpath("schemas/review-result.v1.schema.json")
     return json.loads(resource.read_text())
 
 

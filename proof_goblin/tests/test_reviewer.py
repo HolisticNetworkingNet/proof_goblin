@@ -10,15 +10,12 @@ import pytest
 from proof_goblin import (
     Config,
     ProviderResponse,
-    ReviewOutputValidationError,
     Reviewer,
+    ReviewOutputValidationError,
     TokenUsage,
 )
 
-
-EXAMPLE_CONFIG = (
-    Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
-)
+EXAMPLE_CONFIG = Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
 
 
 class FakeProvider:

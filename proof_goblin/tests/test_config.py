@@ -16,7 +16,6 @@ from proof_goblin import (
     ConfigValidationError,
 )
 
-
 EXAMPLE_CONFIG = Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
 
 

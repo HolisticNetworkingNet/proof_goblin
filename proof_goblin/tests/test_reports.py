@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -21,7 +21,6 @@ from proof_goblin import (
     TokenUsage,
     render_report,
 )
-
 
 EXAMPLE_CONFIG = Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
 
@@ -62,7 +61,7 @@ def make_result() -> ReviewResult:
                 }
             ]
         },
-        created_at=datetime(2026, 7, 14, 9, 30, tzinfo=timezone.utc),
+        created_at=datetime(2026, 7, 14, 9, 30, tzinfo=UTC),
     )
 
 
@@ -88,7 +87,10 @@ def test_text_report_contains_content_and_provenance() -> None:
     assert "Proof Lens: first_time_diner" in rendered
     assert "Configuration: restaurants" in rendered
     assert "Artifact: homepage.html" in rendered
-    assert f"Created: {result.created_at.astimezone().isoformat(timespec='seconds')}" in rendered
+    assert (
+        f"Created: {result.created_at.astimezone().isoformat(timespec='seconds')}"
+        in rendered
+    )
     assert "Provider: openai" in rendered
     assert "Input tokens: 100" in rendered
     assert "Output tokens: 20" in rendered

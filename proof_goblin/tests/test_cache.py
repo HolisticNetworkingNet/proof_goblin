@@ -5,15 +5,14 @@ from __future__ import annotations
 
 import os
 from dataclasses import replace
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from proof_goblin import Config, PromptBuilder
-from proof_goblin.cache import ReviewCache, ReviewCacheError, STALE_LOCK_AGE
+from proof_goblin.cache import STALE_LOCK_AGE, ReviewCache, ReviewCacheError
 from proof_goblin.tests.test_result_serialization import make_result
-
 
 EXAMPLE_CONFIG = Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
 
@@ -250,7 +249,7 @@ def test_reservation_replaces_a_stale_lock(tmp_path: Path) -> None:
     tmp_path.mkdir(exist_ok=True)
     lock_path = tmp_path / "same-key.lock"
     lock_path.write_text("abandoned", encoding="utf-8")
-    stale_time = datetime.now(timezone.utc) - STALE_LOCK_AGE - timedelta(seconds=1)
+    stale_time = datetime.now(UTC) - STALE_LOCK_AGE - timedelta(seconds=1)
     os.utime(lock_path, (stale_time.timestamp(), stale_time.timestamp()))
 
     with cache.reserve("same-key"):

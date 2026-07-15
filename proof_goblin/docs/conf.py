@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version as distribution_version
-
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as distribution_version
 
 project = "Proof Goblin"
 author = "We Build Reactions"

@@ -5,8 +5,8 @@
 
 from proof_goblin.builder import (
     Prompt,
-    PromptBuildError,
     PromptBuilder,
+    PromptBuildError,
     ResolvedReview,
 )
 from proof_goblin.config import (
@@ -28,6 +28,13 @@ from proof_goblin.observations import (
     ReviewResultProvenanceError,
     TokenUsage,
 )
+from proof_goblin.prompt_rendering import (
+    PROMPT_DOCUMENT_FORMAT,
+    PROMPT_DOCUMENT_SCHEMA_VERSION,
+    PromptFormat,
+    PromptRenderError,
+    render_prompt,
+)
 from proof_goblin.providers import (
     DEFAULT_OPENAI_MODEL,
     OpenAIProvider,
@@ -41,24 +48,17 @@ from proof_goblin.providers import (
     ProviderResponseError,
     ProviderUnavailableError,
 )
-from proof_goblin.prompt_rendering import (
-    PROMPT_DOCUMENT_FORMAT,
-    PROMPT_DOCUMENT_SCHEMA_VERSION,
-    PromptFormat,
-    PromptRenderError,
-    render_prompt,
-)
 from proof_goblin.reports import (
     HtmlReportRenderer,
     JsonReportRenderer,
     MarkdownReportRenderer,
     ReportFormat,
-    ReportRenderError,
     ReportRenderer,
+    ReportRenderError,
     TextReportRenderer,
     render_report,
 )
-from proof_goblin.reviewer import ReviewError, Reviewer, ReviewOutputValidationError
+from proof_goblin.reviewer import Reviewer, ReviewError, ReviewOutputValidationError
 
 __all__ = [
     "CONFIG_FORMAT",

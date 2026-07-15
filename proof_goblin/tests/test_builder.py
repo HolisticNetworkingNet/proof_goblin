@@ -8,8 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from proof_goblin import Config, PromptBuildError, PromptBuilder
-
+from proof_goblin import Config, PromptBuilder, PromptBuildError
 
 PACKAGE_ROOT = Path(__file__).parents[1]
 EXAMPLE_CONFIG = PACKAGE_ROOT / "examples" / "restaurants.pgcfg"
@@ -27,9 +26,7 @@ def test_resolves_named_review(builder: PromptBuilder) -> None:
     assert resolved.definition.title == "Restaurant Homepage Review"
     assert resolved.definition.description.startswith("Evaluates")
     assert resolved.definition.lens == "first_time_diner"
-    assert resolved.lens["description"].startswith(
-        "A first-visit customer perspective"
-    )
+    assert resolved.lens["description"].startswith("A first-visit customer perspective")
     assert resolved.mission["questions"]
     assert resolved.protocol["ask_questions"] is True
     assert resolved.output_schema["type"] == "object"

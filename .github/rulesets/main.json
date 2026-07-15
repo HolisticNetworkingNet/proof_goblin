@@ -49,6 +49,9 @@
             "context": "Strict documentation build"
           },
           {
+            "context": "Dependency audit"
+          },
+          {
             "context": "Tests (ubuntu-latest, Python 3.11)"
           },
           {

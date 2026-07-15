@@ -29,6 +29,9 @@ docs = [
 openai = [
     "openai>=2.0",
 ]
+security = [
+    "pip-audit>=2.10.1",
+]
 test = [
     "pytest>=8.3",
 ]

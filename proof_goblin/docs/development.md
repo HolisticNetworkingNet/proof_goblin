@@ -65,6 +65,9 @@ GitHub Actions separates fast feedback from complete pull-request validation:
   (`ruff check .`), Ruff formatting (`ruff format --check .`), the complete
   warnings-as-errors pytest matrix, `proof-goblin --help` in every matrix lane,
   and the strict Sphinx documentation build.
+- **Dependency security** runs on every pull request, every Monday on a
+  schedule, and on manual dispatch. It audits the complete installed dependency
+  surface for known vulnerabilities.
 
 Ubuntu is the primary CI platform. The pull-request pytest matrix covers every
 supported CPython minor version from 3.11 through 3.14 on Ubuntu and adds a
@@ -72,8 +75,11 @@ representative Python 3.14 run on macOS. A Windows Python 3.14 lane is included
 as inexpensive compatibility coverage, but Windows is not currently a declared
 support requirement.
 
-Both workflows use read-only repository permissions, cancel superseded runs,
-and install no OpenAI integration or credentials. Run their checks locally with:
+All three workflows use read-only repository permissions, cancel superseded
+runs, and receive no OpenAI credentials. Only the dependency audit installs the
+optional OpenAI package, solely so that package and its transitive dependencies
+are included in the vulnerability scan; it makes no provider call. Run the core
+checks locally with:
 
 ```bash
 ruff check .
@@ -82,6 +88,50 @@ python -m pytest -q -W error
 proof-goblin --help
 python -m sphinx -W --keep-going -b html proof_goblin/docs proof_goblin/docs/_build/html
 ```
+
+## Dependency security
+
+The canonical `HolisticNetworkingNet/proof_goblin` repository has its dependency
+graph, Dependabot alerts, and Dependabot security updates enabled. The committed
+`.github/dependabot.yml` configuration monitors both Python packages and GitHub
+Actions every Monday at 09:00 America/New_York. Minor and patch version updates
+are grouped within each ecosystem, major updates remain separate for focused
+review, and security updates are grouped within each ecosystem when multiple
+fixes are available.
+
+Dependabot pull requests are never merged automatically. They must pass the
+normal protected-branch checks, including the `Dependency audit` job. That job
+runs on every pull request, every Monday on a schedule, and on manual dispatch.
+It installs the runtime and every optional dependency group, then runs
+`pip-audit` with strict dependency collection and no OpenAI credentials. Run the
+equivalent audit in a clean virtual environment with:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install ".[dev,docs,openai,security,test]"
+python -m pip uninstall --yes proof-goblin
+python -m pip_audit --local --strict --progress-spinner off
+```
+
+Removing only the local project distribution is intentional: its dependencies
+remain installed, while strict `pip-audit` does not try to find the unpublished
+Proof Goblin package in the Python vulnerability database. Upgrading `pip`
+before the scan ensures the installer itself is included at a current version.
+
+All third-party GitHub Actions must be pinned to a full immutable commit SHA. A
+trailing version comment records the corresponding release for human review,
+and Dependabot proposes future Action SHA updates. New Actions require the same
+pinning and verification that the commit belongs to the canonical Action
+repository.
+
+Repository maintainers own alert triage. Critical and high-severity findings
+are assessed within one business day; moderate findings within seven days; and
+low findings within thirty days or the next scheduled update cycle, whichever
+comes first. Breaking upgrades receive a separate pull request and explicit
+compatibility review. An alert dismissal or `pip-audit` ignore requires a
+tracking issue that records the vulnerability identifier, affected dependency,
+rationale, owner, compensating controls, and an expiry no later than thirty
+days. Exceptions must be removed or explicitly renewed after review at expiry.
 
 ## Repository merge policy
 
@@ -95,6 +145,7 @@ current with `main`. The following complete pull-request checks are required:
 
 - `Ruff lint and format`;
 - `Strict documentation build`;
+- `Dependency audit`;
 - `Tests (ubuntu-latest, Python 3.11)`;
 - `Tests (ubuntu-latest, Python 3.12)`;
 - `Tests (ubuntu-latest, Python 3.13)`;

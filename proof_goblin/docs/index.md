@@ -13,6 +13,7 @@ versioned, and reproduced.
 :caption: Contents
 
 overview
+philosophy
 concepts
 getting-started
 bundled-documentation-reviews

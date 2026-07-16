@@ -11,9 +11,7 @@ PACKAGE_ROOT = Path(__file__).parents[1]
 EXAMPLE_CONFIG = PACKAGE_ROOT / "examples" / "restaurants.pgcfg"
 EXAMPLE_ARTIFACT = PACKAGE_ROOT / "examples" / "homepage.html"
 
-DOCUMENTATION_CONFIG = (
-    PACKAGE_ROOT / "configs" / "documentation.pgcfg"
-)
+DOCUMENTATION_CONFIG = PACKAGE_ROOT / "configs" / "documentation.pgcfg"
 
 
 @pytest.fixture
@@ -114,6 +112,7 @@ def test_rejects_empty_artifact_input(
     with pytest.raises(PromptBuildError, match=field):
         builder.build(**arguments)
 
+
 @pytest.mark.parametrize(
     "review",
     [
@@ -134,6 +133,7 @@ def test_documentation_reviews_build(
 
     assert prompt.system
     assert prompt.user
+
 
 def test_show_documentation_reviews(
     documentation_builder: PromptBuilder,

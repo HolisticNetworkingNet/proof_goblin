@@ -36,37 +36,37 @@ def test_documentation_config_contains_expected_lenses(
             "business_owner_first_pass",
             "Business Owner Documentation Review",
             "business_owner",
-            "business_comprehension",
+            "reader_facing",
         ),
         (
             "django_developer_first_pass",
             "Django Developer Documentation Review",
             "django_python_developer",
-            "developer_implementation",
+            "procedural",
         ),
         (
             "technical_writer_first_pass",
             "Technical Writing Review",
             "technical_writer",
-            "technical_writing_quality",
+            "procedural",
         ),
         (
             "technical_writer_concept_reference",
             "Technical Writing Concept Reference Review",
             "technical_writer",
-            "conceptual_reference_quality",
+            "reference",
         ),
         (
             "django_developer_concept_reference",
             "Developer Concept Reference Review",
             "django_python_developer",
-            "conceptual_reference_quality",
+            "reference",
         ),
         (
             "front_end_readability",
             "Front-End Readability Review",
             "technical_writer",
-            "front_end_readability",
+            "reader_facing",
         ),
     ],
 )
@@ -103,6 +103,7 @@ def test_documentation_reviews_build_prompts(
     review_name: str,
 ) -> None:
     artifact = "# Exporting a site\n\nRun the export command."
+
     prompt = PromptBuilder(documentation_config).build(
         review=review_name,
         artifact=artifact,
@@ -128,6 +129,15 @@ def test_concept_reference_reviews_preserve_reference_purpose(
         artifact="# Terms\n\n## Proof Lens\n\nA review perspective.",
     )
 
-    assert "conceptual or terminology reference" in prompt.system
-    assert "not as a tutorial or procedural guide" in prompt.system
-    assert "Do not require setup instructions" in prompt.system
+    assert "reference documentation" in prompt.system
+    assert "not as a tutorial, narrative explanation, or procedural guide" in (
+        prompt.system
+    )
+    assert (
+        "Do not require a linear reading path, implementation sequence, "
+        "decision, call to action, or next-step workflow"
+    ) in prompt.system
+    assert (
+        "Treat precision, completeness, consistency, differentiation, "
+        "and retrieval as the intended outcomes"
+    ) in prompt.system

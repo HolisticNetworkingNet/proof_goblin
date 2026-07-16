@@ -114,28 +114,70 @@ def test_rejects_empty_artifact_input(
 
 
 @pytest.mark.parametrize(
-    "review",
+    (
+        "review_name",
+        "expected_title",
+        "expected_lens",
+        "expected_mission",
+    ),
     [
-        "security_expert_first_pass",
-        "accessibility_specialist_first_pass",
-        "security_expert_security_review",
-        "technical_writer_faq_discovery",
+        (
+            "business_owner_first_pass",
+            "Business Owner Documentation Review",
+            "business_owner",
+            "reader_facing",
+        ),
+        (
+            "django_developer_first_pass",
+            "Django Developer Documentation Review",
+            "django_python_developer",
+            "procedural",
+        ),
+        (
+            "technical_writer_first_pass",
+            "Technical Writing Review",
+            "technical_writer",
+            "procedural",
+        ),
+        (
+            "technical_writer_concept_reference",
+            "Technical Writing Concept Reference Review",
+            "technical_writer",
+            "reference",
+        ),
+        (
+            "django_developer_concept_reference",
+            "Developer Concept Reference Review",
+            "django_python_developer",
+            "reference",
+        ),
+        (
+            "front_end_readability",
+            "Front-End Readability Review",
+            "technical_writer",
+            "reader_facing",
+        ),
     ],
 )
 def test_documentation_reviews_build(
     documentation_builder: PromptBuilder,
-    review: str,
+    review_name: str,
+    expected_title: str,
+    expected_lens: str,
+    expected_mission: str,
 ) -> None:
+    resolved = documentation_builder.resolve(review_name)
+
+    assert resolved.definition.title == expected_title
+    assert resolved.definition.lens == expected_lens
+    assert resolved.definition.mission == expected_mission
+
     prompt = documentation_builder.build(
-        review=review,
+        review=review_name,
         artifact="Hello",
     )
 
     assert prompt.system
     assert prompt.user
-
-
-def test_show_documentation_reviews(
-    documentation_builder: PromptBuilder,
-) -> None:
-    print(documentation_builder.config.reviews.keys())
+    assert prompt.review_name == review_name
+    assert prompt.config_name == "documentation"

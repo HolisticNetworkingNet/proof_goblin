@@ -356,7 +356,7 @@
       "title": "Technical Writing Review",
       "description": "Evaluates reader-facing documentation for audience fit, organization, clarity, consistency, accessibility, and information gaps.",
       "lens": "technical_writer",
-      "mission": "reader_facing",
+      "mission": "procedural",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     },

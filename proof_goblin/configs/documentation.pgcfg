@@ -2,8 +2,8 @@
   "format": "proof-goblin-config",
   "schema_version": "1.0",
   "name": "documentation",
-  "version": "0.4.0",
-  "description": "Reusable lenses and reviews for writing, understanding, maintaining, securing, and improving the accessibility of documentation.",
+  "version": "0.5.0",
+  "description": "Reusable lenses and reviews for purpose-aware documentation review, security analysis, accessibility, and FAQ discovery.",
   "lenses": {
     "business_owner": {
       "description": "A business-operations perspective grounded in organizational responsibilities, customer needs, and day-to-day work, without assuming software-development knowledge.",
@@ -164,65 +164,92 @@
     }
   },
   "missions": {
-    "business_comprehension": {
-      "description": "Identify barriers that prevent a non-technical business owner from understanding and acting on the documentation.",
-      "questions": [
-        "Is it clear what the documented capability does and what business outcome it supports?",
-        "Which terms or assumptions require software knowledge that the reader may not have?",
-        "Can the reader tell what they must decide, provide, or do next?",
-        "Are responsibilities, prerequisites, constraints, costs, or risks missing or difficult to find?",
-        "What context or example is required for the reader to judge whether this is relevant to them?"
-      ]
-    },
-    "developer_implementation": {
-      "description": "Identify gaps that would cause an experienced Django and Python developer to guess, make an unsafe assumption, or fail during implementation.",
-      "questions": [
-        "Are prerequisites, dependencies, supported versions, settings, and setup steps explicit?",
-        "Are public interfaces, inputs, outputs, types, side effects, and ownership boundaries clear?",
-        "Would the examples run as written and do they demonstrate the important path completely?",
-        "Are error behavior, edge cases, compatibility, security, and operational concerns explained where relevant?",
-        "Can the developer determine how to test, verify, diagnose, and safely roll out the result?"
-      ]
-    },
-    "technical_writing_quality": {
-      "description": "Evaluate whether the documentation is structured and written so its intended readers can find, understand, and use it.",
-      "questions": [
-        "Are the intended audience, purpose, scope, and expected outcome apparent?",
-        "Does the information progress in a useful order with prerequisites and next steps in the right places?",
-        "Are terminology, headings, examples, claims, links, and cross-references clear and consistent?",
-        "Where does sentence, paragraph, or section structure create unnecessary cognitive load?",
-        "What important information is missing, duplicated, buried, or presented at the wrong level of detail?"
-      ]
-    },
-    "conceptual_reference_quality": {
-      "description": "Evaluate whether a conceptual or terminology reference establishes accurate, coherent, and retrievable shared meaning.",
+    "procedural": {
+      "description": "Evaluate whether procedural documentation enables its intended reader to complete a defined task safely, correctly, and with appropriate verification.",
       "document_expectations": [
-        "The artifact explains concepts or defines vocabulary rather than teaching a procedure",
-        "Readers may consult individual entries non-sequentially while interpreting other documentation, configuration, output, or code",
-        "Success means that readers can distinguish, relate, and consistently apply the documented concepts"
+        "The artifact teaches or guides the reader through a task, setup, workflow, or operational procedure",
+        "The intended result, prerequisites, sequence, and completion conditions should be apparent",
+        "Success means the reader can complete the claimed task without unsafe guessing"
       ],
       "questions": [
-        "Is the purpose and scope of the reference clear, including what vocabulary it does and does not define?",
-        "Is each definition precise, self-contained, and free of circular or undefined terminology?",
-        "Are similar concepts clearly distinguished and are important relationships between terms explained?",
-        "Do names and definitions agree with the implemented configuration, prompt, result, CLI, and surrounding documentation where those claims appear?",
-        "Can readers locate an individual term quickly, and are examples or cross-references provided where a definition alone would be ambiguous?",
-        "Which necessary concepts are missing, duplicated, inconsistent, or presented at the wrong level of detail?"
+        "Is the task, intended audience, starting state, and expected result clear?",
+        "Are prerequisites, required inputs, dependencies, permissions, and assumptions stated before they are needed?",
+        "Are the steps complete, correctly ordered, and precise enough to follow without guessing?",
+        "Do examples, commands, interface instructions, and intermediate results agree with the described procedure?",
+        "Can the reader verify success and recognize failure, partial completion, or an unsafe state?",
+        "Are relevant recovery, rollback, troubleshooting, compatibility, and operational concerns explained?"
       ],
       "guardrails": [
-        "Evaluate the artifact as conceptual or reference documentation, not as a tutorial or procedural guide",
-        "Do not require setup instructions, implementation steps, decisions, calls to action, or a next-step workflow unless the artifact claims to provide them",
-        "Treat accurate definition, differentiation, relationship, consistency, and retrieval as the intended reader outcomes"
+        "Evaluate only the task or workflow the artifact claims to teach",
+        "Do not require broad conceptual background when it is unnecessary to complete the procedure",
+        "Do not demand exhaustive reference coverage from a focused procedure",
+        "Do not invent missing product behavior or assume the author's intended implementation"
       ]
     },
-    "front_end_readability": {
-      "description": "Evaluate the readability and scan path of reader-facing web content without turning the review into copy editing.",
+    "conceptual": {
+      "description": "Evaluate whether conceptual documentation helps readers understand an idea, its rationale, boundaries, relationships, and consequences.",
+      "document_expectations": [
+        "The artifact explains ideas, architecture, rationale, relationships, or mental models rather than primarily teaching a procedure",
+        "Readers may need to distinguish related concepts and understand why the system is organized as described",
+        "Success means the reader can accurately explain and reason about the documented subject"
+      ],
       "questions": [
-        "Can a reader understand the page's purpose and primary message from its headings and opening content?",
-        "Do headings, paragraphs, lists, labels, and links create a clear scan path?",
-        "Where do jargon, sentence complexity, dense paragraphs, or vague labels slow comprehension?",
-        "Are calls to action and link destinations understandable without surrounding context?",
-        "Does the content expose the most important information before secondary detail?"
+        "Is the central concept, scope, and intended audience clear?",
+        "Are important terms and assumptions introduced before they are used?",
+        "Are related concepts, boundaries, responsibilities, and dependencies clearly distinguished?",
+        "Does the explanation make the rationale, consequences, tradeoffs, or relationships understandable where relevant?",
+        "Are examples or counterexamples provided where abstract explanation alone may be ambiguous?",
+        "What necessary context is missing, inconsistent, duplicated, or presented at the wrong level of detail?"
+      ],
+      "guardrails": [
+        "Evaluate the artifact as an explanation, not as a tutorial, procedure, or lookup table",
+        "Do not require setup instructions, implementation steps, calls to action, or a next-step workflow unless the artifact claims to provide them",
+        "Do not require exhaustive field-by-field reference detail unless precision depends on it",
+        "Treat understanding, differentiation, rationale, boundaries, and relationships as the intended outcomes"
+      ]
+    },
+    "reference": {
+      "description": "Evaluate whether reference documentation provides precise, complete, consistent, and readily retrievable information for non-sequential consultation.",
+      "document_expectations": [
+        "The artifact defines vocabulary, interfaces, options, fields, commands, formats, or other facts readers may consult individually",
+        "Readers may enter at any relevant section rather than reading from beginning to end",
+        "Success means readers can locate and correctly apply authoritative information without guessing"
+      ],
+      "questions": [
+        "Is the scope of the reference clear, including what it does and does not define?",
+        "Is each entry precise, self-contained, consistently structured, and free of circular or undefined terminology?",
+        "Are similar entries clearly distinguished and are important relationships or dependencies cross-referenced?",
+        "Do names, types, values, defaults, constraints, errors, and examples agree with the implemented system where those claims appear?",
+        "Can readers locate an individual fact quickly, and are headings, labels, ordering, links, and indexes useful for retrieval?",
+        "Which necessary entries are missing, duplicated, inconsistent, ambiguous, obsolete, or presented at the wrong level of detail?"
+      ],
+      "guardrails": [
+        "Evaluate the artifact as reference material, not as a tutorial, narrative explanation, or procedural guide",
+        "Do not require a linear reading path, implementation sequence, decision, call to action, or next-step workflow unless the artifact claims to provide one",
+        "Do not penalize concise entries merely for lacking broad conceptual explanation when the facts remain unambiguous",
+        "Treat precision, completeness, consistency, differentiation, and retrieval as the intended outcomes"
+      ]
+    },
+    "reader_facing": {
+      "description": "Evaluate whether reader-facing content communicates its purpose clearly, supports an effective scan path, and enables the intended audience to understand and act appropriately.",
+      "document_expectations": [
+        "The artifact is intended to be read directly by customers, users, stakeholders, or a broad mixed audience",
+        "Readers may scan headings, labels, links, summaries, and calls to action before reading closely",
+        "Success means the intended audience can understand the message, locate relevant information, and take any action the artifact actually offers"
+      ],
+      "questions": [
+        "Are the intended audience, purpose, primary message, and scope apparent from the opening content and headings?",
+        "Do headings, paragraphs, lists, labels, links, and visual references create a clear and accessible scan path?",
+        "Where do jargon, assumptions, sentence complexity, density, or vague labels slow comprehension?",
+        "Are claims, terminology, examples, warnings, links, and calls to action clear, consistent, and understandable without hidden context?",
+        "Does the artifact expose the most important information before secondary detail and make responsibilities or next steps visible where relevant?",
+        "What important information is missing, duplicated, buried, unsupported, or presented at the wrong level of detail for the audience?"
+      ],
+      "guardrails": [
+        "Do not turn the review into copy editing or impose stylistic preference as a defect",
+        "Do not require a call to action, decision, or next step unless the artifact claims to support one",
+        "Do not demand implementation detail unless its absence prevents the intended reader from understanding or acting appropriately",
+        "Distinguish content-level accessibility and clarity concerns from issues that require rendered-interface testing"
       ]
     },
     "security_review": {
@@ -311,49 +338,49 @@
   "reviews": {
     "business_owner_first_pass": {
       "title": "Business Owner Documentation Review",
-      "description": "Evaluates whether a business owner can understand the documented capability, its relevance, and the next step.",
+      "description": "Evaluates whether reader-facing documentation clearly communicates the capability, its business relevance, responsibilities, risks, and any appropriate next step.",
       "lens": "business_owner",
-      "mission": "business_comprehension",
+      "mission": "reader_facing",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     },
     "django_developer_first_pass": {
       "title": "Django Developer Documentation Review",
-      "description": "Evaluates whether an experienced Django and Python developer can implement, integrate, and operate the documented capability.",
+      "description": "Evaluates whether an experienced Django and Python developer can safely and correctly follow the documented procedure or implementation workflow.",
       "lens": "django_python_developer",
-      "mission": "developer_implementation",
+      "mission": "procedural",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     },
     "technical_writer_first_pass": {
       "title": "Technical Writing Review",
-      "description": "Evaluates documentation for audience fit, organization, clarity, consistency, and information gaps.",
+      "description": "Evaluates reader-facing documentation for audience fit, organization, clarity, consistency, accessibility, and information gaps.",
       "lens": "technical_writer",
-      "mission": "technical_writing_quality",
+      "mission": "reader_facing",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     },
     "technical_writer_concept_reference": {
       "title": "Technical Writing Concept Reference Review",
-      "description": "Evaluates whether conceptual and terminology documentation provides clear, coherent, and usable shared meaning.",
+      "description": "Evaluates whether conceptual and terminology reference material is precise, coherent, consistent, and easy to consult.",
       "lens": "technical_writer",
-      "mission": "conceptual_reference_quality",
+      "mission": "reference",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     },
     "django_developer_concept_reference": {
       "title": "Developer Concept Reference Review",
-      "description": "Evaluates whether conceptual and terminology documentation precisely represents the system an experienced Python developer must understand.",
+      "description": "Evaluates whether conceptual and terminology reference material precisely represents the system an experienced Python developer must understand and apply.",
       "lens": "django_python_developer",
-      "mission": "conceptual_reference_quality",
+      "mission": "reference",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     },
     "front_end_readability": {
       "title": "Front-End Readability Review",
-      "description": "Evaluates whether reader-facing web content has a clear purpose, scan path, and call to action.",
+      "description": "Evaluates whether reader-facing web content has a clear purpose, accessible scan path, understandable labels, and appropriate calls to action.",
       "lens": "technical_writer",
-      "mission": "front_end_readability",
+      "mission": "reader_facing",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     },
@@ -423,17 +450,25 @@
     },
     "security_expert_first_pass": {
       "title": "Application Security First Pass",
-      "description": "Evaluates documentation from an application-security perspective, identifying evidence-backed questions about trust boundaries, data handling, authentication, authorization, input validation, operational risk, and other security-relevant concerns.",
+      "description": "Evaluates a documented procedure from an application-security perspective, identifying evidence-backed questions about trust boundaries, data handling, validation, and safe operation.",
       "lens": "security_expert",
-      "mission": "developer_implementation",
+      "mission": "procedural",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     },
     "accessibility_specialist_first_pass": {
       "title": "Accessibility First Pass",
-      "description": "Evaluates documentation from an accessibility perspective, identifying barriers to understanding, navigation, perception, and inclusive use while remaining grounded in the supplied artifact.",
+      "description": "Evaluates reader-facing documentation from an accessibility perspective, identifying barriers to understanding, navigation, perception, and inclusive use.",
       "lens": "accessibility_specialist",
-      "mission": "technical_writing_quality",
+      "mission": "reader_facing",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "technical_writer_conceptual_explanation": {
+      "title": "Technical Writing Conceptual Explanation Review",
+      "description": "Evaluates whether conceptual documentation clearly explains its subject, rationale, boundaries, relationships, and consequences.",
+      "lens": "technical_writer",
+      "mission": "conceptual",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     }

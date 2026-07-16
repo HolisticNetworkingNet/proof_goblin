@@ -24,6 +24,8 @@ def test_documentation_config_contains_expected_lenses(
         "business_owner",
         "django_python_developer",
         "technical_writer",
+        "security_expert",
+        "accessibility_specialist",
     }
 
 

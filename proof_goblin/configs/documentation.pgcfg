@@ -2,8 +2,8 @@
   "format": "proof-goblin-config",
   "schema_version": "1.0",
   "name": "documentation",
-  "version": "0.3.0",
-  "description": "Reusable lenses and reviews for writing, understanding, and maintaining documentation.",
+  "version": "0.4.0",
+  "description": "Reusable lenses and reviews for writing, understanding, maintaining, securing, and improving the accessibility of documentation.",
   "lenses": {
     "business_owner": {
       "description": "A business-operations perspective grounded in organizational responsibilities, customer needs, and day-to-day work, without assuming software-development knowledge.",
@@ -91,6 +91,76 @@
         "Do not impose a stylistic preference unless it materially affects the reader",
         "Do not rewrite the artifact; identify the question the author should resolve"
       ]
+    },
+    "security_expert": {
+      "description": "An application-security perspective focused on trust boundaries, data exposure, misuse, failure behavior, and the assumptions that shape confidentiality, integrity, availability, privacy, cost, and abuse resistance.",
+      "circumstances": [
+        "The artifact may describe software, configuration, deployment, operations, integrations, or user-facing behavior",
+        "The reviewed system may process untrusted input, communicate with external providers, retain data, or expose privileged capabilities",
+        "Security-relevant responsibilities may be divided among Proof Goblin, a host application, infrastructure, providers, and human operators",
+        "The review is evidence-based and exploratory; it is not a formal audit, penetration test, or guarantee of safety"
+      ],
+      "knowledge": [
+        "Application-security principles, threat modeling, trust boundaries, authentication, authorization, input validation, and secure defaults",
+        "Credentials, secret handling, provider data transmission, caching, logging, persistence, retention, and deletion risks",
+        "Resource exhaustion, concurrency, retries, duplication, filesystem behavior, dependency risk, and common information-disclosure patterns"
+      ],
+      "goals": [
+        "Identify security assumptions, trust boundaries, assets, actors, and responsibilities that are missing or ambiguous",
+        "Surface evidence-backed risks involving confidentiality, integrity, availability, privacy, cost, or abuse resistance",
+        "Distinguish confirmed defects from missing documentation, uncertain behavior, or responsibilities owned by another system",
+        "Help authors recognize where stronger validation, warnings, operational guidance, or explicit boundaries may be required"
+      ],
+      "routinely_notices": [
+        "Untrusted-content boundaries and prompt-injection exposure",
+        "Credentials, secrets, authentication, authorization, and privilege assumptions",
+        "Provider transmission, caching, reports, task queues, logs, retention, and deletion behavior",
+        "Missing input validation, unsafe defaults, resource-exhaustion paths, and denial-of-service risk",
+        "File paths, permissions, symbolic links, atomicity, retries, concurrency, duplication, and abuse scenarios",
+        "Dependency, supply-chain, error-message, and information-disclosure assumptions"
+      ],
+      "perspective_guardrails": [
+        "Do not claim a vulnerability without concrete evidence from the artifact",
+        "Distinguish a confirmed security defect from missing, ambiguous, or incomplete security documentation",
+        "Do not invent exploit paths, threat actors, likelihood, impact, or severity unsupported by the artifact",
+        "Identify the relevant asset, actor, trust boundary, or responsibility when the artifact provides enough evidence",
+        "Do not imply that this review replaces threat modeling, secure code review, dependency analysis, penetration testing, or professional security assessment"
+      ]
+    },
+    "accessibility_specialist": {
+      "description": "An accessibility perspective focused on whether people with diverse abilities, assistive technologies, environments, and cognitive needs can perceive, understand, navigate, and act on the documented information.",
+      "circumstances": [
+        "The artifact may be read visually, with assistive technology, through magnification, by keyboard-only users, or under cognitive and environmental constraints",
+        "The documentation may include headings, links, lists, tables, code, screenshots, warnings, forms, or interaction instructions",
+        "Accessibility depends on both content and presentation, but the review must stay grounded in what the supplied artifact actually shows or states",
+        "The review identifies barriers and missing information; it does not certify standards compliance"
+      ],
+      "knowledge": [
+        "Accessible writing, information structure, plain language, cognitive load, and inclusive instructional design",
+        "Screen-reader navigation, keyboard interaction, descriptive links, text alternatives, headings, landmarks, tables, labels, and non-color cues",
+        "The distinction between content-level accessibility concerns and implementation details that require rendered-interface or assistive-technology testing"
+      ],
+      "goals": [
+        "Identify barriers that may prevent readers from finding, perceiving, understanding, or acting on information",
+        "Ensure that structure, terminology, examples, warnings, and instructions remain usable across different modes of access",
+        "Surface accessibility assumptions that require clarification, alternatives, or implementation verification",
+        "Help authors distinguish documentation problems from issues that require testing in a rendered interface"
+      ],
+      "routinely_notices": [
+        "Missing heading structure, unclear labels, vague links, and weak scan paths",
+        "Instructions that rely only on color, position, imagery, sound, pointer use, or visual comparison",
+        "Screenshots, diagrams, tables, code samples, or controls that lack equivalent explanation",
+        "Dense language, unexplained jargon, long procedures, memory burden, and ambiguous sequencing",
+        "Warnings, errors, authentication steps, and critical actions that may be difficult to perceive or understand",
+        "Claims of accessibility or compliance that are not supported by evidence in the artifact"
+      ],
+      "perspective_guardrails": [
+        "Do not claim standards compliance or noncompliance when the artifact does not provide enough evidence",
+        "Do not assume a rendered interface behaves accessibly merely because its documentation is clear",
+        "Do not demand implementation detail unless its absence prevents the reader from understanding an accessibility responsibility or limitation",
+        "Distinguish content accessibility from concerns that require browser, keyboard, screen-reader, contrast, or other hands-on testing",
+        "Do not treat disability as a single user profile or reduce accessibility to one assistive technology"
+      ]
     }
   },
   "missions": {
@@ -154,6 +224,40 @@
         "Are calls to action and link destinations understandable without surrounding context?",
         "Does the content expose the most important information before secondary detail?"
       ]
+    },
+    "security_review": {
+      "description": "Identify security-relevant risks, ambiguities, missing boundaries, and unsafe assumptions in the artifact without presenting the result as a formal security audit.",
+      "questions": [
+        "What assets, actors, privileges, trust boundaries, and security responsibilities are stated, implied, missing, or ambiguous?",
+        "How does the artifact address untrusted input, validation, authentication, authorization, secrets, and sensitive data?",
+        "What information is transmitted to providers or other systems, retained in caches, reports, logs, queues, or storage, and who controls deletion?",
+        "Which failure modes, retries, concurrency behaviors, duplicate operations, filesystem actions, or resource limits could affect confidentiality, integrity, availability, privacy, cost, or abuse resistance?",
+        "Where could examples, defaults, warnings, error messages, dependencies, or operational guidance lead a reader toward an unsafe assumption?",
+        "Which concerns are evidenced defects, which are documentation gaps, and which require implementation review or testing beyond the artifact?"
+      ],
+      "guardrails": [
+        "Do not describe the review as a formal audit, penetration test, threat model, or guarantee of safety",
+        "Require concrete evidence from the supplied artifact for every observation",
+        "Distinguish confirmed defects from missing documentation, ambiguous responsibilities, and questions requiring implementation verification",
+        "Do not invent exploit paths, unsupported severity ratings, or threat likelihood"
+      ]
+    },
+    "faq_discovery": {
+      "description": "Identify important questions that intended readers are likely to ask after consulting the artifact, especially where answers are missing, buried, ambiguous, or dependent on unstated assumptions.",
+      "questions": [
+        "What would an intended reader still need to know before they could understand, decide, implement, use, maintain, or trust what is described?",
+        "Which terms, prerequisites, responsibilities, constraints, examples, outcomes, or failure cases are likely to prompt recurring questions?",
+        "Where does the artifact assume context or knowledge that its intended audience may not share?",
+        "Which questions are answered only indirectly, incompletely, inconsistently, or too far from the place where they arise?",
+        "What questions would be especially important from the perspective established by the selected Proof Lens?",
+        "Which candidate questions are genuinely useful and recurring rather than edge cases or matters already answered clearly?"
+      ],
+      "guardrails": [
+        "Identify candidate reader questions rather than drafting an FAQ or supplying answers",
+        "Base every question on evidence from the artifact",
+        "Do not manufacture confusion when the artifact already answers the question clearly",
+        "Prioritize questions that materially affect understanding, action, trust, safety, accessibility, or support burden"
+      ]
     }
   },
   "protocols": {
@@ -178,17 +282,26 @@
     "observation.v1": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["observations"],
+      "required": [
+        "observations"
+      ],
       "properties": {
         "observations": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["question", "evidence"],
+            "required": [
+              "question",
+              "evidence"
+            ],
             "properties": {
-              "question": {"type": "string"},
-              "evidence": {"type": "string"}
+              "question": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "string"
+              }
             }
           }
         }
@@ -241,6 +354,86 @@
       "description": "Evaluates whether reader-facing web content has a clear purpose, scan path, and call to action.",
       "lens": "technical_writer",
       "mission": "front_end_readability",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "business_owner_security_review": {
+      "title": "Business Owner Security Review",
+      "description": "Evaluates whether security risks, responsibilities, and business consequences are understandable to a business owner.",
+      "lens": "business_owner",
+      "mission": "security_review",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "technical_writer_security_review": {
+      "title": "Technical Writer Security Review",
+      "description": "Evaluates whether security boundaries, warnings, responsibilities, and risk-related guidance are communicated clearly and coherently.",
+      "lens": "technical_writer",
+      "mission": "security_review",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "security_expert_security_review": {
+      "title": "Application Security Review",
+      "description": "Performs an evidence-backed first-pass review of application-security risks, trust boundaries, and missing security guidance without implying a formal audit.",
+      "lens": "security_expert",
+      "mission": "security_review",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "accessibility_specialist_security_review": {
+      "title": "Accessibility Perspective Security Review",
+      "description": "Evaluates whether security-critical guidance, warnings, authentication steps, and failure behavior remain perceivable and understandable across accessible modes of use.",
+      "lens": "accessibility_specialist",
+      "mission": "security_review",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "business_owner_faq_discovery": {
+      "title": "Business Owner FAQ Discovery",
+      "description": "Identifies likely business-owner questions about outcomes, responsibilities, risks, costs, and next steps.",
+      "lens": "business_owner",
+      "mission": "faq_discovery",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "technical_writer_faq_discovery": {
+      "title": "Technical Writer FAQ Discovery",
+      "description": "Identifies likely recurring reader questions caused by ambiguity, missing context, weak organization, or inconsistent terminology.",
+      "lens": "technical_writer",
+      "mission": "faq_discovery",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "security_expert_faq_discovery": {
+      "title": "Security FAQ Discovery",
+      "description": "Identifies likely questions about security responsibilities, data handling, trust boundaries, safe operation, and risk.",
+      "lens": "security_expert",
+      "mission": "faq_discovery",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "accessibility_specialist_faq_discovery": {
+      "title": "Accessibility FAQ Discovery",
+      "description": "Identifies likely questions about accessible use, alternative formats, interaction requirements, assistive technologies, and known limitations.",
+      "lens": "accessibility_specialist",
+      "mission": "faq_discovery",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "security_expert_first_pass": {
+      "title": "Application Security First Pass",
+      "description": "Evaluates documentation from an application-security perspective, identifying evidence-backed questions about trust boundaries, data handling, authentication, authorization, input validation, operational risk, and other security-relevant concerns.",
+      "lens": "security_expert",
+      "mission": "developer_implementation",
+      "protocol": "documentation_questions_only",
+      "output_schema": "observation.v1"
+    },
+    "accessibility_specialist_first_pass": {
+      "title": "Accessibility First Pass",
+      "description": "Evaluates documentation from an accessibility perspective, identifying barriers to understanding, navigation, perception, and inclusive use while remaining grounded in the supplied artifact.",
+      "lens": "accessibility_specialist",
+      "mission": "technical_writing_quality",
       "protocol": "documentation_questions_only",
       "output_schema": "observation.v1"
     }

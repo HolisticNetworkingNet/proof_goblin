@@ -11,10 +11,17 @@ PACKAGE_ROOT = Path(__file__).parents[1]
 EXAMPLE_CONFIG = PACKAGE_ROOT / "examples" / "restaurants.pgcfg"
 EXAMPLE_ARTIFACT = PACKAGE_ROOT / "examples" / "homepage.html"
 
+DOCUMENTATION_CONFIG = PACKAGE_ROOT / "configs" / "documentation.pgcfg"
+
 
 @pytest.fixture
 def builder() -> PromptBuilder:
     return PromptBuilder(Config.load(EXAMPLE_CONFIG))
+
+
+@pytest.fixture
+def documentation_builder() -> PromptBuilder:
+    return PromptBuilder(Config.load(DOCUMENTATION_CONFIG))
 
 
 def test_resolves_named_review(builder: PromptBuilder) -> None:
@@ -104,3 +111,31 @@ def test_rejects_empty_artifact_input(
 
     with pytest.raises(PromptBuildError, match=field):
         builder.build(**arguments)
+
+
+@pytest.mark.parametrize(
+    "review",
+    [
+        "security_expert_first_pass",
+        "accessibility_specialist_first_pass",
+        "security_expert_security_review",
+        "technical_writer_faq_discovery",
+    ],
+)
+def test_documentation_reviews_build(
+    documentation_builder: PromptBuilder,
+    review: str,
+) -> None:
+    prompt = documentation_builder.build(
+        review=review,
+        artifact="Hello",
+    )
+
+    assert prompt.system
+    assert prompt.user
+
+
+def test_show_documentation_reviews(
+    documentation_builder: PromptBuilder,
+) -> None:
+    print(documentation_builder.config.reviews.keys())

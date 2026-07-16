@@ -1,10 +1,17 @@
-# Core Concepts
+# Review Grammar
 
-Proof Goblin uses a small vocabulary to keep review configuration explicit and
-review results attributable. This page defines those terms and their
-relationships; it is a conceptual reference, not a setup or procedural guide.
+Proof Goblin uses a small vocabulary to describe reviews independently of any
+particular AI provider, prompt, or implementation.
 
-## How the concepts fit together
+This **Review Grammar** defines the concepts used to express reviews,
+configure review behavior, and interpret review results. Together they form
+the language of Proof Goblin.
+
+These concepts are intended to remain stable even as the software evolves.
+
+This page is a conceptual reference rather than a setup or procedural guide.
+
+## How the Review Grammar Fits Together
 
 A Configuration Bundle contains components and Named Reviews. Each Named Review
 selects one Proof Lens, Mission, Review Protocol, and Output Schema. At review
@@ -42,10 +49,24 @@ without including the complete artifact in its default serialized record.
 
 ## Proof Lens
 
-A **Proof Lens** positions the review at a defined analytical vantage point. As
-with a camera lens placed in a particular setting, it determines which context,
-knowledge assumptions, priorities, and signals are brought into focus. Proof
-Goblin applies that perspective; it does not impersonate or role-play a person.
+A **Proof Lens** is a disciplined perspective through which an Artifact is
+examined.
+
+Like a camera lens, it determines which signals are brought into focus while
+allowing other concerns to remain in the background. Proof Goblin applies that
+perspective; it does not impersonate or role-play a person.
+
+A Security Expert notices trust boundaries.
+
+A Technical Writer notices ambiguity.
+
+An Accessibility Specialist notices exclusion.
+
+A Product Manager notices user friction.
+
+The Artifact does not change.
+
+Only the perspective changes.
 
 Proof Lens definitions use a flexible internal vocabulary. Bundled lenses
 commonly use these fields:
@@ -68,10 +89,18 @@ material needed to express its perspective.
 
 ## Mission
 
-The **Mission** defines what the review is trying to discover and what success
-means for the kind of Artifact being reviewed. The same Proof Lens can perform
-different Missions—for example, examining a tutorial for onboarding barriers
-or a terminology reference for precise, coherent definitions.
+The **Review Mission** defines what the review is trying to discover.
+
+Every review begins with a question.
+
+The same Proof Lens may participate in many different Missions. For example, a
+Technical Writer might review a tutorial for onboarding barriers, perform an
+FAQ discovery review, or evaluate a concept reference for clarity and
+precision.
+
+A Review Mission provides purpose.
+
+A Proof Lens provides perspective.
 
 Bundled Missions commonly use `description` and `questions`. A Mission may also
 state `document_expectations` or `guardrails` when the Artifact's purpose must
@@ -170,8 +199,16 @@ and deterministic test providers.
 
 ## Observation
 
-An **Observation** is one normalized finding from a completed review. It records
-a question and the concrete evidence that prompted it.
+An **Observation** is one thing a particular Proof Lens considered worthy of
+attention while pursuing a particular Review Mission.
+
+Observations are the fundamental output of Proof Goblin.
+
+They are intentionally small, attributable, and supported by evidence.
+
+An Observation is not a judgment about the author.
+
+It is an invitation to think more carefully.
 
 The Provider response already contains objects with those fields. After
 validating the response against the Output Schema, the Reviewer reads each
@@ -196,6 +233,11 @@ privacy, and compatibility responsibilities.
 
 A **Configuration Bundle** is a `.pgcfg` file containing reusable Proof Lenses,
 Missions, Review Protocols, Output Schemas, and Named Reviews for a domain.
+
+Configuration Bundles allow organizations, projects, and individuals to define
+their own review language without modifying Proof Goblin itself. A bundle
+captures reusable perspectives, review objectives, behavioral protocols, and
+review definitions for a particular domain.
 
 For example, the bundled documentation configuration defines several reader
 perspectives and combines them with general, concept-reference, and readability

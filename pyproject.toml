@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = ["setuptools>=83"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A configurable AI review engine built around reusable proof lenses."
 readme = "README.md"
 requires-python = ">=3.11"
-license = "LicenseRef-Proprietary"
+license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
     "jsonschema>=4.23",
@@ -19,7 +19,8 @@ proof-goblin = "proof_goblin.cli:main"
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.12",
+    "build>=1.2",
+    "ruff==0.15.21",
 ]
 docs = [
     "furo>=2024.8.6",

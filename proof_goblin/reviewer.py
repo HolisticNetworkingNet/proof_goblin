@@ -1,6 +1,3 @@
-# Copyright (c) 2025 We Build Reactions.
-# Proprietary and confidential. See LICENSE for details.
-
 """Provider-neutral review orchestration."""
 
 from __future__ import annotations

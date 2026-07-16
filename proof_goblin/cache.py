@@ -1,6 +1,3 @@
-# Copyright (c) 2025 We Build Reactions.
-# Proprietary and confidential. See LICENSE for details.
-
 """Private filesystem cache for provider review results."""
 
 from __future__ import annotations

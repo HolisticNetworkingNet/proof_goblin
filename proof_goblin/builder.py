@@ -1,6 +1,3 @@
-# Copyright (c) 2025 We Build Reactions.
-# Proprietary and confidential. See LICENSE for details.
-
 """Resolve review definitions and assemble inspectable prompts."""
 
 from __future__ import annotations

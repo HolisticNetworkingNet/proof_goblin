@@ -1,6 +1,3 @@
-# Copyright (c) 2025 We Build Reactions.
-# Proprietary and confidential. See LICENSE for details.
-
 """Render assembled prompts for inspection, storage, and sharing."""
 
 from __future__ import annotations

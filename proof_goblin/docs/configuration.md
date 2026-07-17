@@ -184,7 +184,7 @@ commands described in {doc}`Command-Line Interface <command-line-interface>`.
 
 ## Validation and errors
 
-Configuration failures use three focused exception types, all derived from
+Configuration failures use three focused exception types derived from
 `ConfigError`:
 
 - `ConfigParseError` reports files that cannot be read, invalid UTF-8, and
@@ -193,13 +193,16 @@ Configuration failures use three focused exception types, all derived from
   version; missing or invalid fields; invalid collection shapes; and unresolved
   review references; and
 - `ComponentNotFoundError` reports a missing name requested through
-  `config.review()` or a component accessor; and
-- `InputLimitError` reports a configuration file that exceeds the active
-  `InputLimits` policy.
+  `config.review()` or a component accessor.
+
+`InputLimitError` separately reports a configuration file that exceeds the
+active `InputLimits` policy. It is not derived from `ConfigError`.
 
 The CLI catches these errors, writes a `proof-goblin: error:` diagnostic to
 standard error, and exits with a nonzero status. Python callers may catch the
-specific exception or their common `ConfigError` base class.
+specific configuration exception or their common `ConfigError` base class.
+See {doc}`errors` for the complete CLI contract, exception hierarchy,
+diagnostic-sensitivity guidance, and recommended recovery behavior.
 
 The loader validates the structural rules implemented for schema version 1.0;
 it does not currently load a separate, published JSON Schema document for the

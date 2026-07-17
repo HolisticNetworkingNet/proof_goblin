@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from proof_goblin import (
+    DEFAULT_INPUT_LIMITS,
     Config,
+    InputLimitError,
+    ProviderCapacityStatus,
+    ProviderPreflight,
+    ProviderRequestError,
     ProviderResponse,
     Reviewer,
     ReviewOutputValidationError,
@@ -20,6 +26,13 @@ class FakeProvider:
         self.data = data
         self.prompt = None
         self.output_schema = None
+
+    def preflight(self, prompt, output_schema) -> ProviderPreflight:
+        return ProviderPreflight.assess(
+            provider="fake",
+            model="fake-model",
+            max_output_tokens=100,
+        )
 
     def generate(self, prompt, output_schema) -> ProviderResponse:
         self.prompt = prompt
@@ -79,6 +92,57 @@ def test_reviewer_accepts_no_observations() -> None:
     )
 
     assert result.observations == ()
+
+
+def test_reviewer_rejects_oversized_artifact_without_calling_provider() -> None:
+    provider = FakeProvider({"observations": []})
+    limits = replace(
+        DEFAULT_INPUT_LIMITS,
+        max_artifact_bytes=3,
+        max_total_artifact_bytes=3,
+    )
+
+    with pytest.raises(InputLimitError, match="artifact input"):
+        Reviewer(provider, limits=limits).review(
+            config=Config.load(EXAMPLE_CONFIG),
+            review="homepage_first_pass",
+            artifact="four",
+        )
+
+    assert provider.prompt is None
+
+
+def test_reviewer_exposes_provider_preflight_without_generation() -> None:
+    provider = FakeProvider({"observations": []})
+
+    result = Reviewer(provider).preflight(
+        config=Config.load(EXAMPLE_CONFIG),
+        review="homepage_first_pass",
+        artifact="Welcome",
+    )
+
+    assert result.capacity_status is ProviderCapacityStatus.UNKNOWN
+    assert provider.prompt is None
+
+
+def test_reviewer_rejects_known_capacity_excess_before_generation() -> None:
+    provider = FakeProvider({"observations": []})
+    provider.preflight = lambda prompt, schema: ProviderPreflight.assess(
+        provider="fake",
+        model="small-model",
+        input_tokens=901,
+        max_output_tokens=100,
+        context_window_tokens=1000,
+    )
+
+    with pytest.raises(ProviderRequestError, match="requires 1001 tokens"):
+        Reviewer(provider).review(
+            config=Config.load(EXAMPLE_CONFIG),
+            review="homepage_first_pass",
+            artifact="Welcome",
+        )
+
+    assert provider.prompt is None
 
 
 @pytest.mark.parametrize(

@@ -9,6 +9,8 @@ from proof_goblin import (
     Config,
     OpenAIProvider,
     PromptBuilder,
+    ProviderCapacityStatus,
+    ProviderPreflight,
     ProviderQuotaError,
     ProviderRateLimitError,
     ProviderRefusalError,
@@ -77,6 +79,8 @@ def test_openai_provider_uses_responses_api_with_strict_schema() -> None:
     assert request["instructions"] == prompt.system
     assert request["input"] == prompt.user
     assert request["store"] is False
+    assert request["max_output_tokens"] == 8192
+    assert request["truncation"] == "disabled"
     assert request["text"]["format"] == {
         "type": "json_schema",
         "name": "proof_goblin_observations",
@@ -87,6 +91,53 @@ def test_openai_provider_uses_responses_api_with_strict_schema() -> None:
     assert result.response_id == "resp_123"
     assert result.model == "gpt-5.6-2026-01-01"
     assert result.usage.total_tokens == 100
+
+
+def test_openai_preflight_is_local_and_reports_unknown_capacity() -> None:
+    client = make_client(None)
+    prompt, schema = make_prompt_and_schema()
+
+    result = OpenAIProvider(
+        model="gpt-5.6",
+        max_output_tokens=4096,
+        client=client,
+    ).preflight(prompt, schema)
+
+    assert result.provider == "openai"
+    assert result.model == "gpt-5.6"
+    assert result.max_output_tokens == 4096
+    assert result.capacity_status is ProviderCapacityStatus.UNKNOWN
+    assert result.input_tokens is None
+    assert result.context_window_tokens is None
+    assert client.responses.arguments is None
+
+
+@pytest.mark.parametrize(
+    ("input_tokens", "expected"),
+    [
+        (6000, ProviderCapacityStatus.FITS),
+        (6001, ProviderCapacityStatus.EXCEEDS),
+    ],
+)
+def test_provider_preflight_assesses_exact_context_boundary(
+    input_tokens: int,
+    expected: ProviderCapacityStatus,
+) -> None:
+    result = ProviderPreflight.assess(
+        provider="provider",
+        model="model",
+        input_tokens=input_tokens,
+        max_output_tokens=4000,
+        context_window_tokens=10_000,
+    )
+
+    assert result.capacity_status is expected
+
+
+@pytest.mark.parametrize("value", [0, -1, True, 1.5])
+def test_openai_provider_rejects_invalid_output_limit(value: object) -> None:
+    with pytest.raises(ProviderRequestError, match="max_output_tokens"):
+        OpenAIProvider(max_output_tokens=value, client=make_client(None))
 
 
 def test_openai_provider_reports_model_refusal() -> None:

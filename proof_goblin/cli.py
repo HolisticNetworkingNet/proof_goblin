@@ -13,6 +13,11 @@ from pathlib import Path
 from proof_goblin.builder import PromptBuilder, PromptBuildError
 from proof_goblin.cache import ReviewCache, ReviewCacheError
 from proof_goblin.config import Config, ConfigError
+from proof_goblin.limits import (
+    DEFAULT_INPUT_LIMITS,
+    InputLimitError,
+    InputLimits,
+)
 from proof_goblin.prompt_rendering import (
     PromptFormat,
     PromptRenderError,
@@ -35,17 +40,23 @@ class CliError(RuntimeError):
     """Raised when a CLI request cannot be completed."""
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    limits: InputLimits = DEFAULT_INPUT_LIMITS,
+) -> int:
     """Run the Proof Goblin command-line interface."""
 
     parser = _build_parser()
     args = parser.parse_args(argv)
+    args.input_limits = limits
 
     try:
         return args.handler(args)
     except (
         CliError,
         ConfigError,
+        InputLimitError,
         PromptBuildError,
         PromptRenderError,
         ProviderError,
@@ -155,8 +166,11 @@ def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
 
 def _prompt_command(args: argparse.Namespace) -> int:
     outputs = _resolve_prompt_outputs(args.format, args.output)
-    config, artifact, artifact_name, media_type = _load_inputs(args)
-    prompt = PromptBuilder(config).build(
+    config, artifact, artifact_name, media_type = _load_inputs(
+        args,
+        limits=args.input_limits,
+    )
+    prompt = PromptBuilder(config, limits=args.input_limits).build(
         review=args.review,
         artifact=artifact,
         artifact_name=artifact_name,
@@ -180,8 +194,11 @@ def _review_command(args: argparse.Namespace) -> int:
     ):
         raise CliError("--include-prompt requires JSON output")
 
-    config, artifact, artifact_name, media_type = _load_inputs(args)
-    prompt = PromptBuilder(config).build(
+    config, artifact, artifact_name, media_type = _load_inputs(
+        args,
+        limits=args.input_limits,
+    )
+    prompt = PromptBuilder(config, limits=args.input_limits).build(
         review=args.review,
         artifact=artifact,
         artifact_name=artifact_name,
@@ -200,6 +217,17 @@ def _review_command(args: argparse.Namespace) -> int:
         )
     )
     if result is None:
+        reviewer = Reviewer(
+            OpenAIProvider(model=args.model),
+            limits=args.input_limits,
+        )
+        reviewer.preflight(
+            config=config,
+            review=args.review,
+            artifact=artifact,
+            artifact_name=artifact_name,
+            artifact_media_type=media_type,
+        )
         with cache.reserve(cache_key):
             if not args.refresh:
                 result = cache.load(
@@ -209,7 +237,7 @@ def _review_command(args: argparse.Namespace) -> int:
                     model=args.model,
                 )
             if result is None:
-                result = Reviewer(OpenAIProvider(model=args.model)).review(
+                result = reviewer.review(
                     config=config,
                     review=args.review,
                     artifact=artifact,
@@ -244,28 +272,51 @@ def _review_command(args: argparse.Namespace) -> int:
     return 0
 
 
-def _load_inputs(args: argparse.Namespace) -> tuple[Config, str, str, str]:
-    config = Config.load(args.config)
-    artifact, default_name = _read_artifact(args.artifact)
+def _load_inputs(
+    args: argparse.Namespace,
+    *,
+    limits: InputLimits = DEFAULT_INPUT_LIMITS,
+) -> tuple[Config, str, str, str]:
+    config = Config.load(args.config, limits=limits)
+    artifact, default_name = _read_artifact(args.artifact, limits=limits)
     artifact_name = args.artifact_name or default_name
     media_type = args.media_type or _guess_media_type(artifact_name)
     return config, artifact, artifact_name, media_type
 
 
-def _read_artifact(path_value: str) -> tuple[str, str]:
+def _read_artifact(
+    path_value: str,
+    *,
+    limits: InputLimits = DEFAULT_INPUT_LIMITS,
+) -> tuple[str, str]:
     if path_value == "-":
         try:
-            return sys.stdin.read(), "stdin"
-        except OSError as exc:
+            return _read_limited_stdin(limits), "stdin"
+        except (OSError, UnicodeError) as exc:
             raise CliError(
                 f"could not read artifact from standard input: {exc}"
             ) from exc
 
     path = Path(path_value)
     try:
-        return path.read_text(encoding="utf-8"), path.name
+        size = path.stat().st_size
+        limits.enforce_artifact(size)
+        with path.open("rb") as stream:
+            content = stream.read(limits.max_artifact_bytes + 1)
+        limits.enforce_artifact(len(content))
+        return content.decode("utf-8"), path.name
     except (OSError, UnicodeError) as exc:
         raise CliError(f"could not read artifact {path}: {exc}") from exc
+
+
+def _read_limited_stdin(limits: InputLimits) -> str:
+    chunks: list[str] = []
+    measured = 0
+    while chunk := sys.stdin.read(8192):
+        measured += len(chunk.encode("utf-8"))
+        limits.enforce_artifact(measured)
+        chunks.append(chunk)
+    return "".join(chunks)
 
 
 def _guess_media_type(artifact_name: str) -> str:

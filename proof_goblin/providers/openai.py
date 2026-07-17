@@ -9,6 +9,7 @@ from typing import Any
 from proof_goblin.builder import Prompt
 from proof_goblin.observations import TokenUsage
 from proof_goblin.providers.base import (
+    ProviderPreflight,
     ProviderQuotaError,
     ProviderRateLimitError,
     ProviderRefusalError,
@@ -19,6 +20,7 @@ from proof_goblin.providers.base import (
 )
 
 DEFAULT_OPENAI_MODEL = "gpt-5.6"
+DEFAULT_MAX_OUTPUT_TOKENS = 8_192
 
 
 class OpenAIProvider:
@@ -28,34 +30,37 @@ class OpenAIProvider:
         self,
         *,
         model: str = DEFAULT_OPENAI_MODEL,
+        max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
         client: Any | None = None,
     ) -> None:
         if not isinstance(model, str) or not model.strip():
             raise ProviderRequestError("model must be a non-empty string")
+        if (
+            isinstance(max_output_tokens, bool)
+            or not isinstance(max_output_tokens, int)
+            or max_output_tokens <= 0
+        ):
+            raise ProviderRequestError("max_output_tokens must be a positive integer")
         self.model = model
+        self.max_output_tokens = max_output_tokens
         self.client = client if client is not None else _create_client()
+
+    def preflight(
+        self, prompt: Prompt, output_schema: Mapping[str, Any]
+    ) -> ProviderPreflight:
+        """Validate request compatibility and report known capacity."""
+
+        _, result = self._prepare_request(prompt, output_schema)
+        return result
 
     def generate(
         self, prompt: Prompt, output_schema: Mapping[str, Any]
     ) -> ProviderResponse:
         """Send a structured review request and decode its JSON response."""
 
-        _validate_strict_schema(output_schema)
+        request, _ = self._prepare_request(prompt, output_schema)
         try:
-            response = self.client.responses.create(
-                model=self.model,
-                instructions=prompt.system,
-                input=prompt.user,
-                text={
-                    "format": {
-                        "type": "json_schema",
-                        "name": "proof_goblin_observations",
-                        "strict": True,
-                        "schema": dict(output_schema),
-                    }
-                },
-                store=False,
-            )
+            response = self.client.responses.create(**request)
         except Exception as exc:
             raise _translate_request_error(exc) from exc
 
@@ -85,6 +90,34 @@ class OpenAIProvider:
             model=getattr(response, "model", None) or self.model,
             response_id=getattr(response, "id", None),
             usage=_read_usage(getattr(response, "usage", None)),
+        )
+
+    def _prepare_request(
+        self,
+        prompt: Prompt,
+        output_schema: Mapping[str, Any],
+    ) -> tuple[dict[str, Any], ProviderPreflight]:
+        _validate_strict_schema(output_schema)
+        request = {
+            "model": self.model,
+            "instructions": prompt.system,
+            "input": prompt.user,
+            "text": {
+                "format": {
+                    "type": "json_schema",
+                    "name": "proof_goblin_observations",
+                    "strict": True,
+                    "schema": dict(output_schema),
+                }
+            },
+            "max_output_tokens": self.max_output_tokens,
+            "truncation": "disabled",
+            "store": False,
+        }
+        return request, ProviderPreflight.assess(
+            provider="openai",
+            model=self.model,
+            max_output_tokens=self.max_output_tokens,
         )
 
 

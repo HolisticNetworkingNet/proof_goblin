@@ -137,7 +137,10 @@ token usage.
 
 File writes replace the destination atomically after the complete report has
 been encoded and flushed. A failed write reports an error and does not replace
-an existing report with partial output.
+an existing report with partial output. When several destinations are
+requested, an earlier file may already have been written before a later write
+fails. See the {doc}`Error Reference <errors>` for output-failure recovery and
+diagnostic-sensitivity guidance.
 
 ## JSON prompt retention
 
@@ -222,4 +225,6 @@ syntax, and errors.
 
 Run `proof-goblin --help`, `proof-goblin prompt --help`, or
 `proof-goblin review --help` for the complete option reference. The equivalent
-module invocation is `python -m proof_goblin`.
+module invocation is `python -m proof_goblin`. CLI exit statuses, operational
+diagnostic shapes, and recovery guidance are defined in the
+{doc}`Error Reference <errors>`.

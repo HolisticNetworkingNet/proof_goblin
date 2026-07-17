@@ -18,7 +18,9 @@ than separate provider responses.
 
 `render_report()` accepts `text`, `json`, `markdown`, and `html`. The public
 `ReportRenderer` protocol and the concrete renderer classes provide the same
-boundary when a host needs to select or inject a renderer itself.
+boundary when a host needs to select or inject a renderer itself. Unsupported
+formats and prompt-inclusion combinations raise `ReportRenderError`; see the
+{doc}`Error Reference <errors>` for diagnostics and recovery.
 
 ## Report content
 

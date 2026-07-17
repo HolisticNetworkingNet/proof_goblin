@@ -41,6 +41,8 @@ review_name = "homepage_first_pass"
 `Config.load()` accepts a string or `Path` and returns a validated `Config`.
 Unreadable or malformed input raises `ConfigParseError`; content that does not
 conform to the supported configuration schema raises `ConfigValidationError`.
+Their diagnostic and recovery contracts are defined in the
+{doc}`Error Reference <errors>`.
 
 ## 2. Resolve and inspect the named review
 
@@ -99,7 +101,8 @@ marked as untrusted review material. Empty artifact text or names raise
 normalization, and the supported textual boundary.
 Input that exceeds the builder's `InputLimits` raises `InputLimitError` without
 including input text in the diagnostic. See {doc}`input-limits` for the default
-ceilings and host configuration interface.
+ceilings and host configuration interface, and the {doc}`Error Reference
+<errors>` for the complete assembly-error hierarchy and recovery guidance.
 
 ## 4. Inspect or render the result
 

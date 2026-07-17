@@ -215,7 +215,9 @@ except ReviewOutputValidationError:
 ```
 
 The provider-specific subclasses and their meanings are listed in
-{doc}`OpenAI Provider <openai-provider>`.
+{doc}`OpenAI Provider <openai-provider>`. For the complete exception hierarchy,
+diagnostic-sensitivity boundaries, recovery actions, and retry guidance, see
+the {doc}`Error Reference <errors>`.
 
 ## Persist the canonical result
 

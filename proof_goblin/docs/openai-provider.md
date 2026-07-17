@@ -97,6 +97,9 @@ Provider failures use focused exception types:
 - `ProviderResponseError` for an API failure or unusable response; and
 - `ReviewOutputValidationError` when returned data fails local schema validation.
 
+For diagnostic shapes, potentially sensitive details, remediation, and retry
+guidance for each provider failure, see the {doc}`Error Reference <errors>`.
+
 The example output schema follows OpenAI's strict-schema requirements: its root
 is an object, every object rejects additional properties, and every property is
 required.

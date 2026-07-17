@@ -289,7 +289,8 @@ both in-memory work and persisted results. Avoid serializing an entire
 Provider execution sends the assembled prompt to the selected provider. The
 OpenAI adapter requests `store=False`, but the host remains responsible for
 evaluating the provider's current data-handling terms and suitability for the
-artifact.
+artifact. See {doc}`data-handling` for the stage-by-stage transmission,
+storage, retention, and deletion contract.
 
 ## Render an existing result
 

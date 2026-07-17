@@ -24,6 +24,7 @@ prompt-assembly
 artifact-media-types
 input-limits
 openai-provider
+data-handling
 report-formats
 host-integration
 development

@@ -34,8 +34,11 @@ Human-facing text, Markdown, and HTML reports include:
 - provider, model, response identifier, and token usage; and
 - numbered questions with their evidence.
 
-These formats identify the reviewed artifact but do not contain its body. They
-also exclude the system and user prompt text.
+These formats identify the reviewed artifact but do not contain its body as a
+dedicated field. They also exclude the system and user prompt text. Questions
+and evidence are model-produced content and can quote the artifact, so an
+ordinary report is not necessarily safe to disclose. See {doc}`data-handling`
+for retention and access-control responsibilities.
 
 ## Plain text
 

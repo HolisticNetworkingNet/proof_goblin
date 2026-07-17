@@ -127,7 +127,8 @@ Text, versioned JSON, Markdown, and standalone HTML are supported. Every format
 contains the complete artifact and must be handled as sensitive content. See
 {doc}`Command-Line Interface <command-line-interface>` for the equivalent
 `proof-goblin prompt` command and {doc}`Report Formats <report-formats>` for
-the rendering and escaping contract.
+the rendering and escaping contract. The provider, result, cache, and retention
+stages are traced in {doc}`data-handling`.
 
 ## Determinism and provenance
 

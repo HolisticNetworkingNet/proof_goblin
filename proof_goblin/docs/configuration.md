@@ -404,4 +404,6 @@ receive provider credentials, avoid printing their environment, and do not
 assume that upstream SDK diagnostics share Proof Goblin's stable error wording.
 Prompt-inclusive files contain the complete artifact and configuration-derived
 system prompt. Cached results omit those prompt fields but can still contain
-sensitive model-produced evidence.
+sensitive model-produced evidence. See {doc}`data-handling` for the full path
+from configuration and artifact inputs through provider transmission, caching,
+reports, retention, and deletion.

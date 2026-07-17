@@ -157,8 +157,11 @@ proof-goblin review artifact.md \
   --output review.json
 ```
 
-Text, Markdown, and HTML reports never include prompt text or artifact content.
-When several files are requested, `--include-prompt` affects only JSON files.
+Text, Markdown, and HTML reports do not include prompt text or the artifact body
+as a dedicated field. Their model-produced observations and evidence can still
+quote artifact content. When several files are requested, `--include-prompt`
+affects only JSON files. See {doc}`data-handling` for the complete lifecycle and
+retention responsibilities.
 
 ## Review cache
 
@@ -199,6 +202,10 @@ prompt, or complete artifact body. They can contain model-produced evidence
 quoted from the artifact and should still be treated as potentially sensitive.
 Proof Goblin creates the cache directory and files with user-only permissions
 where the operating system supports them.
+
+Completed cache entries do not expire automatically, and the CLI does not
+provide a cache-deletion command. The operator owns retention and deletion of
+the selected cache directory.
 
 The default location is the platform's per-user cache area, including
 `~/Library/Caches/proof-goblin` on macOS and `$XDG_CACHE_HOME/proof-goblin` (or

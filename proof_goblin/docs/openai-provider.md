@@ -40,6 +40,26 @@ Defining a Python variable named `OPENAI_API_KEY` does not configure the OpenAI
 SDK. The value must be in the process environment or passed explicitly to the
 SDK client.
 
+## Data sent to OpenAI
+
+A live review sends the complete assembled prompt: selected Lens, Mission,
+Review Protocol, and Output Schema content as instructions, plus the artifact
+name, media type, and complete artifact as user input. The Output Schema is also
+sent as the strict structured-output contract. The request includes the model,
+maximum output allowance, disabled truncation, and `store=False`.
+
+The API key authenticates the SDK request but is not placed in the prompt,
+credential-free prepared request, cache identity, or result provenance.
+`store=False` does not define every provider-side logging, abuse-monitoring,
+retention, training-use, residency, or deletion rule. Confirm that the current
+provider and account policy is appropriate before sending sensitive material.
+
+Proof Goblin validates the decoded response in memory. An in-memory
+`ReviewResult` retains the prompt and raw decoded output. Default serialized
+results and CLI cache entries omit prompt fields, but their observations and
+evidence can quote the artifact. See {doc}`data-handling` for the complete
+lifecycle and ownership boundaries.
+
 ## Run a live review
 
 The repository includes a fixed smoke-test script using the restaurant bundle

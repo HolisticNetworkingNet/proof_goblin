@@ -48,6 +48,23 @@ class ProviderCapacityStatus(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class ProviderRequest:
+    """Credential-free parameters that completely describe a provider call."""
+
+    provider: str
+    model: str
+    parameters: Mapping[str, Any]
+
+    def __post_init__(self) -> None:
+        for name in ("provider", "model"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} must be a non-empty string")
+        if not isinstance(self.parameters, Mapping):
+            raise ValueError("parameters must be a mapping")
+
+
+@dataclass(frozen=True, slots=True)
 class ProviderPreflight:
     """Safe readiness information for an exact provider request."""
 
@@ -57,6 +74,7 @@ class ProviderPreflight:
     capacity_status: ProviderCapacityStatus
     input_tokens: int | None = None
     context_window_tokens: int | None = None
+    request: ProviderRequest | None = None
 
     def __post_init__(self) -> None:
         for name in ("provider", "model"):
@@ -70,6 +88,11 @@ class ProviderPreflight:
                 _require_positive_token_count(value, name, allow_zero=True)
         if not isinstance(self.capacity_status, ProviderCapacityStatus):
             raise ValueError("capacity_status must be a ProviderCapacityStatus")
+        if self.request is not None:
+            if self.request.provider != self.provider:
+                raise ValueError("request provider must match preflight provider")
+            if self.request.model != self.model:
+                raise ValueError("request model must match preflight model")
         if self.capacity_status is not ProviderCapacityStatus.UNKNOWN:
             if self.input_tokens is None or self.context_window_tokens is None:
                 raise ValueError(
@@ -94,6 +117,7 @@ class ProviderPreflight:
         max_output_tokens: int,
         input_tokens: int | None = None,
         context_window_tokens: int | None = None,
+        request: ProviderRequest | None = None,
     ) -> ProviderPreflight:
         """Classify capacity when both token measurements are reliable."""
 
@@ -110,6 +134,7 @@ class ProviderPreflight:
             capacity_status=status,
             input_tokens=input_tokens,
             context_window_tokens=context_window_tokens,
+            request=request,
         )
 
 
@@ -130,7 +155,7 @@ class Provider(Protocol):
     def preflight(
         self, prompt: Prompt, output_schema: Mapping[str, Any]
     ) -> ProviderPreflight:
-        """Validate and describe an exact request without generating output."""
+        """Validate and describe an exact credential-free request."""
 
     def generate(
         self, prompt: Prompt, output_schema: Mapping[str, Any]

@@ -49,6 +49,7 @@ from proof_goblin.providers import (
     ProviderQuotaError,
     ProviderRateLimitError,
     ProviderRefusalError,
+    ProviderRequest,
     ProviderRequestError,
     ProviderResponse,
     ProviderResponseError,
@@ -64,7 +65,12 @@ from proof_goblin.reports import (
     TextReportRenderer,
     render_report,
 )
-from proof_goblin.reviewer import Reviewer, ReviewError, ReviewOutputValidationError
+from proof_goblin.reviewer import (
+    PreparedReview,
+    Reviewer,
+    ReviewError,
+    ReviewOutputValidationError,
+)
 
 __all__ = [
     "CONFIG_FORMAT",
@@ -92,6 +98,7 @@ __all__ = [
     "PromptFormat",
     "PromptMeasurements",
     "PromptRenderError",
+    "PreparedReview",
     "Provider",
     "ProviderCapacityStatus",
     "ProviderError",
@@ -99,6 +106,7 @@ __all__ = [
     "ProviderRateLimitError",
     "ProviderRefusalError",
     "ProviderPreflight",
+    "ProviderRequest",
     "ProviderRequestError",
     "ProviderResponse",
     "ProviderResponseError",

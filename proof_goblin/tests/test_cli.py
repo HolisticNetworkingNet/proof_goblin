@@ -10,6 +10,7 @@ import pytest
 
 from proof_goblin import (
     ProviderPreflight,
+    ProviderRequest,
     ProviderRequestError,
     ProviderResponse,
     TokenUsage,
@@ -47,10 +48,22 @@ class FakeProvider:
         )
 
     def preflight(self, prompt, output_schema) -> ProviderPreflight:
+        request = ProviderRequest(
+            provider="openai",
+            model=self.model,
+            parameters={
+                "model": self.model,
+                "instructions": prompt.system,
+                "input": prompt.user,
+                "schema": output_schema,
+                "max_output_tokens": 100,
+            },
+        )
         return ProviderPreflight.assess(
             provider="openai",
             model=self.model,
             max_output_tokens=100,
+            request=request,
         )
 
 
@@ -483,9 +496,174 @@ def test_refresh_replaces_matching_cached_result(
     ]
 
     assert cli.main(arguments) == 0
+    confirmation = StringIO("yes\n")
+    confirmation.isatty = lambda: True
+    monkeypatch.setattr("sys.stdin", confirmation)
     assert cli.main([*arguments, "--refresh"]) == 0
 
     assert FakeProvider.calls == 2
+
+
+def test_declining_refresh_renders_cached_result_without_provider_call(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+    arguments = [
+        "review",
+        str(artifact_path),
+        "--config",
+        str(EXAMPLE_CONFIG),
+        "--review",
+        "homepage_first_pass",
+        "--model",
+        "test-model",
+    ]
+    assert cli.main(arguments) == 0
+    confirmation = StringIO("no\n")
+    confirmation.isatty = lambda: True
+    monkeypatch.setattr("sys.stdin", confirmation)
+
+    assert cli.main([*arguments, "--refresh"]) == 0
+
+    assert FakeProvider.calls == 1
+
+
+def test_force_refresh_replaces_cache_without_interactive_input(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+    arguments = [
+        "review",
+        str(artifact_path),
+        "--config",
+        str(EXAMPLE_CONFIG),
+        "--review",
+        "homepage_first_pass",
+        "--model",
+        "test-model",
+    ]
+
+    assert cli.main(arguments) == 0
+    assert cli.main([*arguments, "--force-refresh"]) == 0
+    assert FakeProvider.calls == 2
+
+
+def test_confirmed_refresh_recovers_invalid_matching_cache(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+    arguments = [
+        "review",
+        str(artifact_path),
+        "--config",
+        str(EXAMPLE_CONFIG),
+        "--review",
+        "homepage_first_pass",
+    ]
+    assert cli.main(arguments) == 0
+    [cache_path] = (tmp_path / "cache").glob("*.json")
+    cache_path.write_text("not json", encoding="utf-8")
+    confirmation = StringIO("yes\n")
+    confirmation.isatty = lambda: True
+    monkeypatch.setattr("sys.stdin", confirmation)
+
+    assert cli.main([*arguments, "--refresh"]) == 0
+
+    assert FakeProvider.calls == 2
+    assert json.loads(cache_path.read_text(encoding="utf-8"))["format"] == (
+        "proof-goblin-review-result"
+    )
+
+
+def test_noninteractive_refresh_of_cached_result_requires_force(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+    arguments = [
+        "review",
+        str(artifact_path),
+        "--config",
+        str(EXAMPLE_CONFIG),
+        "--review",
+        "homepage_first_pass",
+    ]
+    assert cli.main(arguments) == 0
+    capsys.readouterr()
+
+    assert cli.main([*arguments, "--refresh"]) == 1
+
+    captured = capsys.readouterr()
+    assert "use --force-refresh" in captured.err
+    assert FakeProvider.calls == 1
+
+
+def test_refresh_of_stdin_cache_requires_force(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+    arguments = [
+        "review",
+        "-",
+        "--config",
+        str(EXAMPLE_CONFIG),
+        "--review",
+        "homepage_first_pass",
+    ]
+    monkeypatch.setattr("sys.stdin", StringIO("Welcome"))
+    assert cli.main(arguments) == 0
+    capsys.readouterr()
+    monkeypatch.setattr("sys.stdin", StringIO("Welcome"))
+
+    assert cli.main([*arguments, "--refresh"]) == 1
+
+    assert "use --force-refresh" in capsys.readouterr().err
+    assert FakeProvider.calls == 1
+
+
+def test_refresh_options_are_mutually_exclusive(artifact_path: Path) -> None:
+    with pytest.raises(SystemExit):
+        cli.main(
+            [
+                "review",
+                str(artifact_path),
+                "--config",
+                str(EXAMPLE_CONFIG),
+                "--review",
+                "homepage_first_pass",
+                "--refresh",
+                "--force-refresh",
+            ]
+        )
+
+
+def test_refresh_without_cache_hit_needs_no_confirmation(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+
+    assert (
+        cli.main(
+            [
+                "review",
+                str(artifact_path),
+                "--config",
+                str(EXAMPLE_CONFIG),
+                "--review",
+                "homepage_first_pass",
+                "--refresh",
+            ]
+        )
+        == 0
+    )
+    assert FakeProvider.calls == 1
 
 
 def test_provider_preflight_failure_does_not_reserve_cache(

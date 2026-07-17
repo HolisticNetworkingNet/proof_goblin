@@ -13,6 +13,7 @@ from proof_goblin.providers.base import (
     ProviderQuotaError,
     ProviderRateLimitError,
     ProviderRefusalError,
+    ProviderRequest,
     ProviderRequestError,
     ProviderResponse,
     ProviderResponseError,
@@ -43,7 +44,17 @@ class OpenAIProvider:
             raise ProviderRequestError("max_output_tokens must be a positive integer")
         self.model = model
         self.max_output_tokens = max_output_tokens
-        self.client = client if client is not None else _create_client()
+        self._client = client
+
+    @property
+    def client(self) -> Any:
+        """Return the supplied client or initialize the default client lazily."""
+
+        return self._get_client()
+
+    @client.setter
+    def client(self, value: Any) -> None:
+        self._client = value
 
     def preflight(
         self, prompt: Prompt, output_schema: Mapping[str, Any]
@@ -59,8 +70,15 @@ class OpenAIProvider:
         """Send a structured review request and decode its JSON response."""
 
         request, _ = self._prepare_request(prompt, output_schema)
+        return self.generate_prepared(request)
+
+    def generate_prepared(self, request: ProviderRequest) -> ProviderResponse:
+        """Send a previously validated request without rebuilding it."""
+
+        if request.provider != "openai" or request.model != self.model:
+            raise ProviderRequestError("prepared request does not match provider")
         try:
-            response = self.client.responses.create(**request)
+            response = self._get_client().responses.create(**dict(request.parameters))
         except Exception as exc:
             raise _translate_request_error(exc) from exc
 
@@ -96,9 +114,9 @@ class OpenAIProvider:
         self,
         prompt: Prompt,
         output_schema: Mapping[str, Any],
-    ) -> tuple[dict[str, Any], ProviderPreflight]:
+    ) -> tuple[ProviderRequest, ProviderPreflight]:
         _validate_strict_schema(output_schema)
-        request = {
+        parameters = {
             "model": self.model,
             "instructions": prompt.system,
             "input": prompt.user,
@@ -114,11 +132,22 @@ class OpenAIProvider:
             "truncation": "disabled",
             "store": False,
         }
+        request = ProviderRequest(
+            provider="openai",
+            model=self.model,
+            parameters=parameters,
+        )
         return request, ProviderPreflight.assess(
             provider="openai",
             model=self.model,
             max_output_tokens=self.max_output_tokens,
+            request=request,
         )
+
+    def _get_client(self) -> Any:
+        if self._client is None:
+            self._client = _create_client()
+        return self._client
 
 
 def _create_client() -> Any:

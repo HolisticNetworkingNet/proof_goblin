@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from io import StringIO
 from pathlib import Path
 
@@ -102,8 +103,8 @@ def test_prompt_command_prints_assembled_prompt(
     captured = capsys.readouterr()
     assert exit_code == 0
     assert captured.out.startswith("[SYSTEM]\n")
-    assert "Artifact name: homepage.html" in captured.out
-    assert "Artifact media type: text/html" in captured.out
+    assert '"name":"homepage.html"' in captured.out
+    assert '"media_type":"text/html"' in captured.out
     assert "<main>Welcome</main>" in captured.out
     assert captured.err == ""
 
@@ -129,8 +130,8 @@ def test_prompt_command_reads_standard_input(
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "Artifact name: stdin" in captured.out
-    assert "Artifact media type: text/markdown" in captured.out
+    assert '"name":"stdin"' in captured.out
+    assert '"media_type":"text/markdown"' in captured.out
     assert "# Documentation" in captured.out
 
 
@@ -158,7 +159,10 @@ def test_prompt_command_prints_versioned_json(
     assert payload["format"] == "proof-goblin-prompt"
     assert payload["review"]["name"] == "homepage_first_pass"
     assert payload["artifact"]["media_type"] == "text/html"
-    assert payload["prompt"]["user"].endswith("--- END UNTRUSTED ARTIFACT ---")
+    assert re.search(
+        r"--- END UNTRUSTED ARTIFACT proof-goblin-artifact-[a-f0-9]{64} ---$",
+        payload["prompt"]["user"],
+    )
 
 
 def test_prompt_normalizes_explicit_media_type(
@@ -180,7 +184,7 @@ def test_prompt_normalizes_explicit_media_type(
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "Artifact media type: application/yaml" in captured.out
+    assert '"media_type":"application/yaml"' in captured.out
     assert captured.err == ""
 
 
@@ -229,7 +233,7 @@ def test_prompt_explicit_media_type_allows_unknown_extension(
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "Artifact media type: text/plain" in captured.out
+    assert '"media_type":"text/plain"' in captured.out
     assert captured.err == ""
 
 
@@ -441,7 +445,10 @@ def test_review_command_prints_serialized_json(
     assert payload["review"]["protocol"] == "questions_only"
     assert payload["review"]["output_schema"] == "observation.v1"
     assert payload["observations"][0]["question"] == "Where are the opening hours?"
-    assert payload["prompt"]["user"].endswith("--- END UNTRUSTED ARTIFACT ---")
+    assert re.search(
+        r"--- END UNTRUSTED ARTIFACT proof-goblin-artifact-[a-f0-9]{64} ---$",
+        payload["prompt"]["user"],
+    )
 
 
 def test_review_rejects_prompt_in_text_output(

@@ -237,6 +237,25 @@ measure original file bytes. Selected configuration content is still bounded
 when it becomes an assembled system prompt. See {doc}`input-limits` for the
 complete boundary model.
 
+The supplied mapping is caller-owned. `Config.from_mapping()` validates it,
+recursively copies its JSON-compatible content, and stores mappings and
+sequences in immutable internal forms. Mutating the original mapping or any of
+its nested dictionaries and lists after validation cannot change the returned
+`Config`.
+
+The public `lenses`, `missions`, `protocols`, `output_schemas`, `reviews`, and
+`metadata` mappings are read-only, including their nested mappings and
+sequences. Named component accessors such as `config.mission()` return a fresh
+mutable dictionary and fresh nested lists on every call. A caller may adapt
+that copy for its own work without changing later access, prompt assembly,
+provider validation, or cache identity. Additional review metadata is retained
+as a recursively immutable `ReviewDefinition.metadata` mapping.
+
+Construct a new `Config` when configuration state must change. For file-backed
+configuration, modifying and reloading the `.pgcfg` file also produces a new
+digest. `Config.from_mapping()` has no original byte representation and
+therefore continues to use the explicitly supplied `sha256` value or `None`.
+
 ### Provenance
 
 `Config.load()` reads the original file bytes before parsing them. The returned

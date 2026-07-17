@@ -10,6 +10,7 @@ from proof_goblin import (
     ArtifactMediaTypeError,
     Config,
     InputLimitError,
+    PromptBuilder,
     ProviderCapacityStatus,
     ProviderPreflight,
     ProviderRequest,
@@ -96,6 +97,29 @@ def test_reviewer_returns_validated_observations() -> None:
     assert result.usage.total_tokens == 120
     assert result.prompt.artifact_name == "homepage.html"
     assert provider.output_schema == config.output_schema("observation.v1")
+
+
+def test_inspection_cannot_change_later_executed_prompt_or_schema() -> None:
+    config = Config.load(EXAMPLE_CONFIG)
+    inspected_prompt = PromptBuilder(config).build(
+        review="homepage_first_pass",
+        artifact="Welcome",
+    )
+    inspected_mission = config.mission("homepage_clarity")
+    inspected_schema = config.output_schema("observation.v1")
+    inspected_mission["questions"] = ["Changed after inspection"]
+    inspected_schema["required"] = []
+    provider = FakeProvider({"observations": []})
+
+    result = Reviewer(provider).review(
+        config=config,
+        review="homepage_first_pass",
+        artifact="Welcome",
+    )
+
+    assert result.prompt == inspected_prompt
+    assert provider.output_schema == config.output_schema("observation.v1")
+    assert provider.output_schema["required"] == ["observations"]
 
 
 def test_reviewer_accepts_no_observations() -> None:

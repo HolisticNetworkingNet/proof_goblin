@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from types import MappingProxyType
 
 import pytest
 
@@ -130,3 +131,68 @@ def test_named_accessor_reports_missing_component() -> None:
 
     with pytest.raises(ComponentNotFoundError, match="Unknown lens 'missing'"):
         config.lens("missing")
+
+
+def test_config_detaches_and_freezes_nested_input_state() -> None:
+    data = valid_config()
+    data["metadata"] = {"owners": ["original"]}
+    reviews = data["reviews"]
+    lenses = data["lenses"]
+    assert isinstance(reviews, dict)
+    assert isinstance(lenses, dict)
+    review = reviews["first_pass"]
+    lens = lenses["reader"]
+    assert isinstance(review, dict)
+    assert isinstance(lens, dict)
+    review["audiences"] = ["writers"]
+
+    config = Config.from_mapping(data)
+
+    lens["description"] = "Changed after validation"
+    review["audiences"].append("attackers")
+    data["metadata"]["owners"].append("changed")
+
+    assert config.lens("reader")["description"] == "A reader-centered perspective."
+    assert config.review("first_pass").metadata["audiences"] == ("writers",)
+    assert config.metadata["metadata"]["owners"] == ("original",)
+    assert isinstance(config.lenses, MappingProxyType)
+    assert isinstance(config.review("first_pass").metadata, MappingProxyType)
+
+
+def test_component_accessors_return_independent_mutable_copies() -> None:
+    config = Config.from_mapping(valid_config())
+
+    first = config.mission("clarity")
+    questions = first["questions"]
+    assert isinstance(questions, list)
+    first["description"] = "Caller mutation"
+    questions.append("A new question")
+
+    second = config.mission("clarity")
+    assert second == {"questions": ["What is unclear?"]}
+    assert first is not second
+    assert first["questions"] is not second["questions"]
+
+
+def test_public_config_mappings_are_recursively_immutable() -> None:
+    config = Config.from_mapping(valid_config())
+
+    with pytest.raises(TypeError):
+        config.lenses["new"] = {}  # type: ignore[index]
+    lens = config.lenses["reader"]
+    with pytest.raises(TypeError):
+        lens["description"] = "changed"  # type: ignore[index]
+    questions = config.missions["clarity"]["questions"]
+    assert isinstance(questions, tuple)
+
+
+def test_from_mapping_rejects_non_json_nested_values() -> None:
+    data = valid_config()
+    lenses = data["lenses"]
+    assert isinstance(lenses, dict)
+    reader = lenses["reader"]
+    assert isinstance(reader, dict)
+    reader["unsupported"] = {"set value"}
+
+    with pytest.raises(ConfigValidationError, match="JSON-compatible values"):
+        Config.from_mapping(data)

@@ -104,7 +104,8 @@ print(result.max_output_tokens)
 ```
 
 Provider preflight validates provider-specific request compatibility and
-reserves the same maximum output tokens sent during execution. When a provider
+returns the credential-free `ProviderRequest` description used for cache
+identity and execution. It reserves the same maximum output tokens sent during execution. When a provider
 has reliable input-token and context-window information, capacity is reported
 as `fits` or `exceeds`. Otherwise it is `unknown`. A known excessive request is
 rejected before generation; unknown capacity proceeds after the deterministic

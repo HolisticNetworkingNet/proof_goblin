@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 
 from jsonschema import SchemaError, ValidationError, validators
@@ -15,6 +16,7 @@ from proof_goblin.providers.base import (
     Provider,
     ProviderCapacityStatus,
     ProviderPreflight,
+    ProviderRequest,
     ProviderRequestError,
 )
 
@@ -25,6 +27,16 @@ class ReviewError(RuntimeError):
 
 class ReviewOutputValidationError(ReviewError):
     """Raised when structured output does not match its declared schema."""
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedReview:
+    """A validated review and the exact credential-free provider request."""
+
+    resolved: ResolvedReview
+    prompt: Prompt
+    request: ProviderRequest
+    preflight: ProviderPreflight
 
 
 class Reviewer:
@@ -52,6 +64,25 @@ class Reviewer:
     ) -> ProviderPreflight:
         """Prepare and validate a review without generating provider output."""
 
+        return self.prepare(
+            config=config,
+            review=review,
+            artifact=artifact,
+            artifact_name=artifact_name,
+            artifact_media_type=artifact_media_type,
+        ).preflight
+
+    def prepare(
+        self,
+        *,
+        config: Config,
+        review: str,
+        artifact: str,
+        artifact_name: str = "artifact",
+        artifact_media_type: str = "text/plain",
+    ) -> PreparedReview:
+        """Build and validate one canonical provider request."""
+
         resolved, prompt = self._prepare(
             config=config,
             review=review,
@@ -59,9 +90,18 @@ class Reviewer:
             artifact_name=artifact_name,
             artifact_media_type=artifact_media_type,
         )
-        result = self.provider.preflight(prompt, resolved.output_schema)
-        _reject_excessive_provider_request(result)
-        return result
+        preflight = self.provider.preflight(prompt, resolved.output_schema)
+        _reject_excessive_provider_request(preflight)
+        if preflight.request is None:
+            raise ProviderRequestError(
+                "provider preflight did not describe the prepared request"
+            )
+        return PreparedReview(
+            resolved=resolved,
+            prompt=prompt,
+            request=preflight.request,
+            preflight=preflight,
+        )
 
     def review(
         self,
@@ -74,30 +114,40 @@ class Reviewer:
     ) -> ReviewResult:
         """Run a named review against an artifact."""
 
-        resolved, prompt = self._prepare(
+        prepared = self.prepare(
             config=config,
             review=review,
             artifact=artifact,
             artifact_name=artifact_name,
             artifact_media_type=artifact_media_type,
         )
-        preflight = self.provider.preflight(prompt, resolved.output_schema)
-        _reject_excessive_provider_request(preflight)
-        response = self.provider.generate(prompt, resolved.output_schema)
-        _validate_output(response.data, resolved.output_schema)
+        return self.review_prepared(prepared)
+
+    def review_prepared(self, prepared: PreparedReview) -> ReviewResult:
+        """Execute a request that was already prepared and validated."""
+
+        generate_prepared = getattr(self.provider, "generate_prepared", None)
+        if generate_prepared is None:
+            response = self.provider.generate(
+                prepared.prompt,
+                prepared.resolved.output_schema,
+            )
+        else:
+            response = generate_prepared(prepared.request)
+        _validate_output(response.data, prepared.resolved.output_schema)
         observations = _read_observations(response.data)
 
         return ReviewResult(
             observations=observations,
-            prompt=prompt,
+            prompt=prepared.prompt,
             review=ReviewAttribution(
-                name=resolved.definition.name,
-                title=resolved.definition.title,
-                description=resolved.definition.description,
-                lens=resolved.definition.lens,
-                mission=resolved.definition.mission,
-                protocol=resolved.definition.protocol,
-                output_schema=resolved.definition.output_schema,
+                name=prepared.resolved.definition.name,
+                title=prepared.resolved.definition.title,
+                description=prepared.resolved.definition.description,
+                lens=prepared.resolved.definition.lens,
+                mission=prepared.resolved.definition.mission,
+                protocol=prepared.resolved.definition.protocol,
+                output_schema=prepared.resolved.definition.output_schema,
             ),
             provider=response.provider,
             model=response.model,

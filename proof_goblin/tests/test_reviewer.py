@@ -11,6 +11,7 @@ from proof_goblin import (
     InputLimitError,
     ProviderCapacityStatus,
     ProviderPreflight,
+    ProviderRequest,
     ProviderRequestError,
     ProviderResponse,
     Reviewer,
@@ -28,10 +29,22 @@ class FakeProvider:
         self.output_schema = None
 
     def preflight(self, prompt, output_schema) -> ProviderPreflight:
+        request = ProviderRequest(
+            provider="fake",
+            model="fake-model",
+            parameters={
+                "model": "fake-model",
+                "system": prompt.system,
+                "user": prompt.user,
+                "schema": output_schema,
+                "max_output_tokens": 100,
+            },
+        )
         return ProviderPreflight.assess(
             provider="fake",
             model="fake-model",
             max_output_tokens=100,
+            request=request,
         )
 
     def generate(self, prompt, output_schema) -> ProviderResponse:
@@ -133,6 +146,11 @@ def test_reviewer_rejects_known_capacity_excess_before_generation() -> None:
         input_tokens=901,
         max_output_tokens=100,
         context_window_tokens=1000,
+        request=ProviderRequest(
+            provider="fake",
+            model="small-model",
+            parameters={"model": "small-model"},
+        ),
     )
 
     with pytest.raises(ProviderRequestError, match="requires 1001 tokens"):

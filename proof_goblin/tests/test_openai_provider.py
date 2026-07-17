@@ -109,6 +109,10 @@ def test_openai_preflight_is_local_and_reports_unknown_capacity() -> None:
     assert result.capacity_status is ProviderCapacityStatus.UNKNOWN
     assert result.input_tokens is None
     assert result.context_window_tokens is None
+    assert result.request is not None
+    assert result.request.parameters["model"] == "gpt-5.6"
+    assert result.request.parameters["max_output_tokens"] == 4096
+    assert result.request.parameters["truncation"] == "disabled"
     assert client.responses.arguments is None
 
 

@@ -127,10 +127,16 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="include prompt text in JSON output",
     )
-    review_parser.add_argument(
+    refresh_group = review_parser.add_mutually_exclusive_group()
+    refresh_group.add_argument(
         "--refresh",
         action="store_true",
-        help="contact the provider and replace any matching cached result",
+        help="confirm before replacing a matching cached result",
+    )
+    refresh_group.add_argument(
+        "--force-refresh",
+        action="store_true",
+        help="replace a matching cached result without prompting",
     )
     review_parser.set_defaults(handler=_review_command)
 
@@ -198,57 +204,55 @@ def _review_command(args: argparse.Namespace) -> int:
         args,
         limits=args.input_limits,
     )
-    prompt = PromptBuilder(config, limits=args.input_limits).build(
+    reviewer = Reviewer(
+        OpenAIProvider(model=args.model),
+        limits=args.input_limits,
+    )
+    prepared = reviewer.prepare(
+        config=config,
         review=args.review,
         artifact=artifact,
         artifact_name=artifact_name,
         artifact_media_type=media_type,
     )
+    prompt = prepared.prompt
     cache = ReviewCache()
-    cache_key = cache.key_for(prompt, provider="openai", model=args.model)
-    result = (
-        None
-        if args.refresh
-        else cache.load(
-            cache_key,
-            prompt=prompt,
-            provider="openai",
-            model=args.model,
-        )
+    cache_key = cache.key_for(prepared.request)
+    refresh_requested = args.refresh or args.force_refresh
+    current_entry_exists = cache.has_entry(cache_key)
+    cached = cache.load(
+        cache_key,
+        request=prepared.request,
+        prompt=prompt,
+        invalid_as_miss=refresh_requested,
     )
+    replace_cached = args.force_refresh
+    result = cached
+    if args.refresh and (cached is not None or current_entry_exists):
+        replace_cached = _confirm_refresh(args.artifact)
+        if replace_cached:
+            result = None
+        elif cached is None:
+            raise CliError("the matching cached result is invalid and was not replaced")
+    elif cached is not None and args.force_refresh:
+        result = None
+
     if result is None:
-        reviewer = Reviewer(
-            OpenAIProvider(model=args.model),
-            limits=args.input_limits,
-        )
-        reviewer.preflight(
-            config=config,
-            review=args.review,
-            artifact=artifact,
-            artifact_name=artifact_name,
-            artifact_media_type=media_type,
-        )
         with cache.reserve(cache_key):
-            if not args.refresh:
-                result = cache.load(
-                    cache_key,
-                    prompt=prompt,
-                    provider="openai",
-                    model=args.model,
-                )
-            if result is None:
-                result = reviewer.review(
-                    config=config,
-                    review=args.review,
-                    artifact=artifact,
-                    artifact_name=artifact_name,
-                    artifact_media_type=media_type,
-                )
+            latest = cache.load(
+                cache_key,
+                request=prepared.request,
+                prompt=prompt,
+                invalid_as_miss=refresh_requested,
+            )
+            if latest is not None and not refresh_requested:
+                result = latest
+            else:
+                result = reviewer.review_prepared(prepared)
                 cache.store(
                     cache_key,
                     result,
-                    request_provider="openai",
-                    request_model=args.model,
+                    request=prepared.request,
                 )
 
     rendered_outputs = [
@@ -270,6 +274,20 @@ def _review_command(args: argparse.Namespace) -> int:
         else:
             _write_output(path, rendered, noun="report")
     return 0
+
+
+def _confirm_refresh(artifact_path: str) -> bool:
+    if artifact_path == "-" or not sys.stdin.isatty():
+        raise CliError(
+            "--refresh needs an interactive terminal when a cached result exists; "
+            "use --force-refresh for noninteractive replacement"
+        )
+    sys.stderr.write(
+        "A matching cached review exists. Contact the provider and replace it? [y/N] "
+    )
+    sys.stderr.flush()
+    answer = sys.stdin.readline()
+    return answer.strip().lower() in {"y", "yes"}
 
 
 def _load_inputs(

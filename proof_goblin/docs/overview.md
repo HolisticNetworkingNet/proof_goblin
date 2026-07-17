@@ -86,9 +86,11 @@ validated result that can be cached and rendered in several forms:
 
 Configuration loading and prompt assembly are deterministic and do not contact
 an AI provider. Rendering an existing result also requires no provider call.
-The command-line cache reuses an exact matching review; changing the artifact,
-configuration, named review, or requested model creates a different cache
-identity. `--refresh` explicitly requests a replacement result.
+The command-line cache reuses an exact prepared provider request, including its
+prompt, output schema, model, and generation controls. Provenance metadata that
+does not change the request does not create a miss. `--refresh` confirms a
+replacement interactively; `--force-refresh` is the explicit noninteractive
+form.
 
 ## Inputs and boundaries
 

@@ -8,16 +8,19 @@ import os
 import stat
 import sys
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from os import replace as replace_file
 from pathlib import Path
+from typing import Any
 
 from proof_goblin.builder import Prompt
 from proof_goblin.observations import ReviewResult, ReviewResultProvenanceError
+from proof_goblin.providers.base import ProviderRequest
 
-CACHE_KEY_VERSION = "2"
+CACHE_KEY_VERSION = "3"
 CACHE_DIRECTORY_ENV = "PROOF_GOBLIN_CACHE_DIR"
 STALE_LOCK_AGE = timedelta(minutes=15)
 
@@ -32,34 +35,51 @@ class ReviewCache:
     def __init__(self, directory: Path | None = None) -> None:
         self.directory = directory or default_cache_directory()
 
-    def key_for(self, prompt: Prompt, *, provider: str, model: str) -> str:
+    def key_for(self, request: ProviderRequest) -> str:
         """Return the stable identity of a provider request."""
 
-        identity = {
-            "version": CACHE_KEY_VERSION,
-            "provider": provider,
-            "model": model,
-            "system": prompt.system,
-            "user": prompt.user,
-            "review_name": prompt.review_name,
-            "config_name": prompt.config_name,
-            "config_version": prompt.config_version,
-            "config_sha256": prompt.config_sha256,
-            "artifact_name": prompt.artifact_name,
-            "artifact_media_type": prompt.artifact_media_type,
-            "artifact_sha256": prompt.artifact_sha256,
-        }
-        return self._hash_identity(identity)
+        try:
+            return self._hash_identity(
+                {
+                    "version": CACHE_KEY_VERSION,
+                    "provider": request.provider,
+                    "model": request.model,
+                    "parameters": request.parameters,
+                }
+            )
+        except (TypeError, ValueError) as exc:
+            raise ReviewCacheError(
+                "prepared provider request must contain JSON-compatible values"
+            ) from exc
 
     @staticmethod
-    def _hash_identity(identity: dict[str, str | None]) -> str:
+    def _hash_identity(identity: object) -> str:
         encoded = json.dumps(
             identity,
             ensure_ascii=False,
+            allow_nan=False,
             sort_keys=True,
             separators=(",", ":"),
         ).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
+
+    def _version_two_key_for(self, prompt: Prompt, *, provider: str, model: str) -> str:
+        return self._hash_identity(
+            {
+                "version": "2",
+                "provider": provider,
+                "model": model,
+                "system": prompt.system,
+                "user": prompt.user,
+                "review_name": prompt.review_name,
+                "config_name": prompt.config_name,
+                "config_version": prompt.config_version,
+                "config_sha256": prompt.config_sha256,
+                "artifact_name": prompt.artifact_name,
+                "artifact_media_type": prompt.artifact_media_type,
+                "artifact_sha256": prompt.artifact_sha256,
+            }
+        )
 
     def _legacy_key_for(self, prompt: Prompt, *, provider: str, model: str) -> str:
         return self._hash_identity(
@@ -76,18 +96,28 @@ class ReviewCache:
         self,
         key: str,
         *,
+        request: ProviderRequest,
         prompt: Prompt,
-        provider: str,
-        model: str,
+        invalid_as_miss: bool = False,
     ) -> ReviewResult | None:
         """Load and verify a cached result, or return ``None`` on a miss."""
 
-        if key != self.key_for(prompt, provider=provider, model=model):
+        if key != self.key_for(request):
             raise ReviewCacheError("review cache key does not match request identity")
-        legacy_key = self._legacy_key_for(prompt, provider=provider, model=model)
-        candidates = ((self._result_path(key), False),)
-        if legacy_key != key:
-            candidates += ((self._result_path(legacy_key), True),)
+        version_two_key = self._version_two_key_for(
+            prompt,
+            provider=request.provider,
+            model=request.model,
+        )
+        legacy_key = self._legacy_key_for(
+            prompt,
+            provider=request.provider,
+            model=request.model,
+        )
+        candidates = [(self._result_path(key), False)]
+        for legacy_candidate in (version_two_key, legacy_key):
+            if legacy_candidate != key:
+                candidates.append((self._result_path(legacy_candidate), True))
 
         for path, is_legacy in candidates:
             try:
@@ -103,8 +133,9 @@ class ReviewCache:
                 record = json.loads(serialized)
                 if not isinstance(record, dict):
                     raise ValueError("cached result must be an object")
-                result = ReviewResult.from_dict(record, prompt=prompt)
-                if result.provider != provider:
+                result_prompt = prompt if is_legacy else _cached_prompt(record, prompt)
+                result = ReviewResult.from_dict(record, prompt=result_prompt)
+                if result.provider != request.provider:
                     raise ValueError("cached provider does not match request")
                 return result
             except ReviewResultProvenanceError as exc:
@@ -112,33 +143,37 @@ class ReviewCache:
                     # Version 1 omitted provenance from its key. A mismatch is
                     # therefore a safe cache miss rather than corruption.
                     continue
+                if invalid_as_miss:
+                    return None
                 raise ReviewCacheError(
                     f"cached review {path} is invalid; rerun with --refresh: {exc}"
                 ) from exc
             except (json.JSONDecodeError, ValueError) as exc:
+                if invalid_as_miss:
+                    return None
                 raise ReviewCacheError(
                     f"cached review {path} is invalid; rerun with --refresh: {exc}"
                 ) from exc
         return None
+
+    def has_entry(self, key: str) -> bool:
+        """Return whether the exact current-version cache path exists."""
+
+        return self._result_path(key).is_file()
 
     def store(
         self,
         key: str,
         result: ReviewResult,
         *,
-        request_provider: str,
-        request_model: str,
+        request: ProviderRequest,
     ) -> None:
         """Atomically store a canonical result without prompt text."""
 
-        expected_key = self.key_for(
-            result.prompt,
-            provider=request_provider,
-            model=request_model,
-        )
+        expected_key = self.key_for(request)
         if key != expected_key:
             raise ReviewCacheError("review cache key does not match request identity")
-        if result.provider != request_provider:
+        if result.provider != request.provider:
             raise ReviewCacheError("response provider does not match request provider")
         self._prepare_directory()
         path = self._result_path(key)
@@ -247,6 +282,45 @@ class ReviewCache:
             raise ReviewCacheError(
                 f"could not inspect review cache reservation {path}: {exc}"
             ) from exc
+
+
+def _cached_prompt(record: Mapping[str, Any], current: Prompt) -> Prompt:
+    """Attach cached provenance to request-equivalent in-memory prompt text."""
+
+    review = _cached_mapping(record, "review")
+    config = _cached_mapping(record, "config")
+    artifact = _cached_mapping(record, "artifact")
+    config_sha256 = config.get("sha256")
+    if config_sha256 is not None and not isinstance(config_sha256, str):
+        raise ValueError("config.sha256 must be a string or null")
+    return replace(
+        current,
+        review_name=_cached_string(review, "name", "review.name"),
+        config_name=_cached_string(config, "name", "config.name"),
+        config_version=_cached_string(config, "version", "config.version"),
+        config_sha256=config_sha256,
+        artifact_name=_cached_string(artifact, "name", "artifact.name"),
+        artifact_media_type=_cached_string(
+            artifact,
+            "media_type",
+            "artifact.media_type",
+        ),
+        artifact_sha256=_cached_string(artifact, "sha256", "artifact.sha256"),
+    )
+
+
+def _cached_mapping(record: Mapping[str, Any], field: str) -> Mapping[str, Any]:
+    value = record.get(field)
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{field} must be an object")
+    return value
+
+
+def _cached_string(record: Mapping[str, Any], field: str, display_name: str) -> str:
+    value = record.get(field)
+    if not isinstance(value, str):
+        raise ValueError(f"{display_name} must be a string")
+    return value
 
 
 def default_cache_directory() -> Path:

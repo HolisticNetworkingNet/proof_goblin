@@ -39,7 +39,8 @@ model. Those choices remain with the host.
 
 The following service accepts a configuration path at startup and returns a
 `ReviewResult` for each artifact. `OpenAIProvider` reads `OPENAI_API_KEY` from
-the process environment when no client is supplied.
+the process environment when execution first needs a client and none was
+supplied.
 
 ```python
 from pathlib import Path
@@ -315,10 +316,36 @@ A fake provider can capture the prompt and return schema-compatible data without
 credentials, network access, or API cost:
 
 ```python
-from proof_goblin import Config, ProviderResponse, Reviewer, TokenUsage
+from proof_goblin import (
+    Config,
+    ProviderPreflight,
+    ProviderRequest,
+    ProviderResponse,
+    Reviewer,
+    TokenUsage,
+)
 
 
 class FakeProvider:
+    def preflight(self, prompt, output_schema):
+        request = ProviderRequest(
+            provider="fake",
+            model="fake-model",
+            parameters={
+                "model": "fake-model",
+                "system": prompt.system,
+                "user": prompt.user,
+                "output_schema": output_schema,
+                "max_output_tokens": 100,
+            },
+        )
+        return ProviderPreflight.assess(
+            provider="fake",
+            model="fake-model",
+            max_output_tokens=100,
+            request=request,
+        )
+
     def generate(self, prompt, output_schema):
         self.prompt = prompt
         self.output_schema = output_schema

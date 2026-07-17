@@ -15,6 +15,10 @@ status is `unknown`: Proof Goblin does not maintain a model-context catalog or
 make a separate remote token-count request for every review. See
 {doc}`input-limits` for the complete contract.
 
+The prepared request is credential-free and deterministic. The CLI hashes that
+complete description for cache identity, and execution sends the same prepared
+parameters rather than assembling a second variant.
+
 ## Install the optional integration
 
 ```bash

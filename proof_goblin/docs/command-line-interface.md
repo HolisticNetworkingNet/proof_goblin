@@ -160,9 +160,12 @@ When several files are requested, `--include-prompt` affects only JSON files.
 ## Review cache
 
 Before contacting the provider, the `review` command looks for a cached result
-with the same assembled prompt, provider, and model. A matching result is reused
-until the caller explicitly supplies `--refresh`. This lets a later command add
-another format without purchasing or generating a different review:
+with the same exact prepared provider request. The identity includes the
+provider, requested model, separated prompt content, structured-output schema,
+maximum output allowance, truncation policy, and every other request parameter.
+Credentials and SDK transport settings are excluded. A matching result is
+reused silently. This lets a later command add another format without purchasing
+or generating a different review:
 
 ```bash
 proof-goblin review proof_goblin/docs/overview.md \
@@ -171,11 +174,22 @@ proof-goblin review proof_goblin/docs/overview.md \
   --output technical-writing-review.txt
 ```
 
-Changing the artifact, configuration, named review, model, or other prompt
-content creates a different cache identity and permits a new provider request.
-Use `--refresh` only when a new response is deliberately required. Simultaneous
-identical requests are prevented; an abandoned reservation is considered stale
-after fifteen minutes.
+Only changes that alter the prepared provider request create a new identity.
+Provenance-only configuration metadata does not create a miss; a reused result
+continues to report the original provenance under which it was generated.
+
+When a matching entry exists, `--refresh` asks for confirmation on the terminal
+before contacting the provider. Declining renders the cached result. In scripts,
+or when the artifact is read from standard input, use `--force-refresh` for an
+intentional noninteractive replacement. The two options are mutually exclusive.
+If no matching entry exists, either option proceeds without confirmation.
+Simultaneous identical requests are prevented; an abandoned reservation is
+considered stale after fifteen minutes.
+
+Cache version 3 uses the exact prepared request. Compatible version 2 and
+version 1 entries are reused only when their older key can be calculated and
+their stored provenance matches. Old entries are not scanned or automatically
+rewritten, so some upgrades cause a safe one-time cache miss.
 
 Cached entries are canonical JSON records without the system prompt, user
 prompt, or complete artifact body. They can contain model-produced evidence

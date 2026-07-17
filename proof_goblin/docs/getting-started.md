@@ -146,12 +146,12 @@ observations. The two files contain the same observations, response identifier,
 creation time, and token usage because Proof Goblin contacts the provider only
 once and renders that result into both formats.
 
-Proof Goblin caches the result by assembled prompt, provider, and model. Running
-the same review again reuses that result rather than making another billable
-request. Changing the artifact, configuration, named review, or model creates a
-different cache identity. Use `--refresh` only when you deliberately want a new
-provider response. See {doc}`command-line-interface` for cache location,
-privacy, and output-format details.
+Proof Goblin caches the result by the exact prepared provider request. Running
+the same request again reuses that result rather than making another billable
+request. Use interactive `--refresh` when you deliberately want to confirm a
+replacement, or `--force-refresh` in a script. See
+{doc}`command-line-interface` for identity, compatibility, privacy, and
+output-format details.
 
 Provider credential, quota, rate-limit, refusal, and response failures are
 reported as `proof-goblin: error:` messages. The {doc}`openai-provider` page

@@ -117,10 +117,12 @@ output. Its canonical JSON form is versioned and can be rendered alongside the
 human-facing report formats described in {doc}`report-formats`.
 
 Prompt text and the complete artifact body are excluded from serialized results
-and cache entries by default. They can be retained explicitly in JSON when an
-application has an appropriate archival and access-control policy. See
-{doc}`host-integration` for the stable result record and {doc}`report-formats`
-for presentation and security behavior.
+and cache entries by default. Observations and evidence can still reproduce
+sensitive source material. Complete prompt text can be retained explicitly in
+JSON when an application has an appropriate archival and access-control policy.
+See {doc}`data-handling` for the end-to-end lifecycle, {doc}`host-integration`
+for the stable result record, and {doc}`report-formats` for presentation and
+escaping behavior.
 
 Configuration, prompt assembly, provider, and output-validation failures use
 focused exception types. The CLI reports these failures as errors and returns a
@@ -139,5 +141,7 @@ and recovery behavior. Provider-specific failures are described in
 - Inspect prompts or run reviews from a terminal in
   {doc}`command-line-interface`.
 - Configure credentials and execute a live review in {doc}`openai-provider`.
+- Trace provider transmission, local storage, retention, and deletion ownership
+  in {doc}`data-handling`.
 - Embed Proof Goblin in another Python application with
   {doc}`host-integration`.

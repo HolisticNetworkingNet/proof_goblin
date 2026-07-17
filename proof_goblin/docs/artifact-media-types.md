@@ -71,7 +71,8 @@ standard-input bytes must be UTF-8 before media-type resolution.
 Malformed or unsupported values raise `ArtifactMediaTypeError` before provider
 construction, cache reservation, or execution. The canonical value is the only
 value stored in the `Prompt`, sent in provider request content, and recorded in
-`ReviewResult` provenance.
+`ReviewResult` provenance. See the {doc}`Error Reference <errors>` for its
+diagnostic categories, import path, and recovery guidance.
 
 Media-type validation is a declared-content boundary, not content sniffing.
 Proof Goblin does not verify that the artifact body matches its name or declared

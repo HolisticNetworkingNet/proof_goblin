@@ -135,6 +135,12 @@ $env:OPENAI_API_KEY = "replace-with-your-api-key"
 Your shell may save commands in its history. See {doc}`openai-provider` for a
 hidden-input example and additional provider details.
 
+The live review sends the complete artifact and selected review instructions to
+OpenAI. The resulting reports and CLI cache omit prompt fields, but observations
+and evidence can quote the artifact and should be handled according to its
+sensitivity. See {doc}`data-handling` for the complete transmission and
+retention lifecycle.
+
 Run a technical-writing review and render the single provider response as both
 Markdown and HTML:
 

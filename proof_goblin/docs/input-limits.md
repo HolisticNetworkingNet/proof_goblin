@@ -32,7 +32,9 @@ therefore participate in the total without receiving separate public knobs.
 An exact limit is accepted. One byte over is rejected with `InputLimitError`.
 The error identifies the boundary, measurement, and limit but never includes
 configuration-derived prompt text or artifact content. Proof Goblin does not
-truncate, summarize, or rewrite input to make it fit.
+truncate, summarize, or rewrite input to make it fit. See the
+{doc}`Error Reference <errors>` for the exception's structured attributes and
+recovery guidance.
 
 ## Configure limits in a host
 
@@ -122,7 +124,9 @@ Preflight does not probe credentials, account quota, rate-limit headroom,
 network access, provider health, likely refusals, exact cost, prompt-injection
 safety, or review quality. Those properties are transient, application-owned,
 or unknowable before execution. The real provider call must still handle
-normal failures.
+normal failures. Known excessive capacity is reported as a
+`ProviderRequestError`; provider execution failures and their retry guidance are
+cataloged in the {doc}`Error Reference <errors>`.
 
 ## Technical fit and review focus
 

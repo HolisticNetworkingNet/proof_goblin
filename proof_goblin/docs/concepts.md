@@ -228,8 +228,10 @@ decoded provider output, and a timezone-aware creation time.
 `ReviewResult.to_dict()` and `ReviewResult.to_json()` produce the canonical
 versioned result record. Prompt text—and therefore the complete Artifact—is
 omitted from that record by default, although the in-memory ReviewResult retains
-it. See {doc}`Host Application Integration <host-integration>` for persistence,
-privacy, and compatibility responsibilities.
+it. Normalized observations and evidence can still reproduce Artifact content.
+See {doc}`data-handling` for the complete lifecycle and {doc}`Host Application
+Integration <host-integration>` for application persistence and compatibility
+responsibilities.
 
 ## Configuration Bundle
 

@@ -137,7 +137,10 @@ token usage.
 
 File writes replace the destination atomically after the complete report has
 been encoded and flushed. A failed write reports an error and does not replace
-an existing report with partial output.
+an existing report with partial output. When several destinations are
+requested, an earlier file may already have been written before a later write
+fails. See the {doc}`Error Reference <errors>` for output-failure recovery and
+diagnostic-sensitivity guidance.
 
 ## JSON prompt retention
 
@@ -154,8 +157,11 @@ proof-goblin review artifact.md \
   --output review.json
 ```
 
-Text, Markdown, and HTML reports never include prompt text or artifact content.
-When several files are requested, `--include-prompt` affects only JSON files.
+Text, Markdown, and HTML reports do not include prompt text or the artifact body
+as a dedicated field. Their model-produced observations and evidence can still
+quote artifact content. When several files are requested, `--include-prompt`
+affects only JSON files. See {doc}`data-handling` for the complete lifecycle and
+retention responsibilities.
 
 ## Review cache
 
@@ -197,6 +203,10 @@ quoted from the artifact and should still be treated as potentially sensitive.
 Proof Goblin creates the cache directory and files with user-only permissions
 where the operating system supports them.
 
+Completed cache entries do not expire automatically, and the CLI does not
+provide a cache-deletion command. The operator owns retention and deletion of
+the selected cache directory.
+
 The default location is the platform's per-user cache area, including
 `~/Library/Caches/proof-goblin` on macOS and `$XDG_CACHE_HOME/proof-goblin` (or
 `~/.cache/proof-goblin`) on Linux. Set `PROOF_GOBLIN_CACHE_DIR` to override it.
@@ -222,4 +232,6 @@ syntax, and errors.
 
 Run `proof-goblin --help`, `proof-goblin prompt --help`, or
 `proof-goblin review --help` for the complete option reference. The equivalent
-module invocation is `python -m proof_goblin`.
+module invocation is `python -m proof_goblin`. CLI exit statuses, operational
+diagnostic shapes, and recovery guidance are defined in the
+{doc}`Error Reference <errors>`.

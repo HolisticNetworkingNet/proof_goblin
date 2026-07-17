@@ -215,7 +215,9 @@ except ReviewOutputValidationError:
 ```
 
 The provider-specific subclasses and their meanings are listed in
-{doc}`OpenAI Provider <openai-provider>`.
+{doc}`OpenAI Provider <openai-provider>`. For the complete exception hierarchy,
+diagnostic-sensitivity boundaries, recovery actions, and retry guidance, see
+the {doc}`Error Reference <errors>`.
 
 ## Persist the canonical result
 
@@ -287,7 +289,8 @@ both in-memory work and persisted results. Avoid serializing an entire
 Provider execution sends the assembled prompt to the selected provider. The
 OpenAI adapter requests `store=False`, but the host remains responsible for
 evaluating the provider's current data-handling terms and suitability for the
-artifact.
+artifact. See {doc}`data-handling` for the stage-by-stage transmission,
+storage, retention, and deletion contract.
 
 ## Render an existing result
 

@@ -8,9 +8,7 @@ from proof_goblin.cache import CACHE_DIRECTORY_ENV
 from proof_goblin.limits import DEFAULT_INPUT_LIMITS
 from proof_goblin.providers import DEFAULT_MAX_OUTPUT_TOKENS, DEFAULT_OPENAI_MODEL
 
-CONFIGURATION_DOC = (
-    Path(__file__).resolve().parents[1] / "docs" / "configuration.md"
-)
+CONFIGURATION_DOC = Path(__file__).resolve().parents[1] / "docs" / "configuration.md"
 
 
 def _configuration_documentation() -> str:

@@ -173,6 +173,44 @@ owner using it must open or update a tracking issue with the reason, affected
 commit, checks performed, and follow-up work before merging the emergency pull
 request.
 
+## Issue-linked branch workflow
+
+Issue-driven changes follow one visible lifecycle: create the issue, create its
+linked branch, resolve the issue on that branch, and merge a pull request that
+closes the issue. This keeps the issue's Development section, branch, pull
+request, and final merge connected in GitHub.
+
+Create an issue branch through GitHub's issue-development workflow rather than
+creating an ordinary local branch and relying on its name to imply a link. Use
+the issue's **Create a branch** action or the equivalent GitHub CLI command:
+
+```bash
+gh issue develop ISSUE_NUMBER \
+  --base main \
+  --name feature/ISSUE_NUMBER-short-slug \
+  --checkout
+```
+
+The branch name for issue-driven work is
+`feature/<issue-number>-<short-kebab-case-slug>`. The issue number makes the
+relationship legible, while `gh issue develop` or GitHub's issue interface
+creates the actual Development link. A branch created only with `git switch -c`
+does not establish that GitHub association.
+
+Open the pull request from the linked branch into `main` and include a closing
+keyword on its own line in the pull request description:
+
+```text
+Closes #ISSUE_NUMBER
+```
+
+Confirm that both the branch and pull request appear in the issue's Development
+section before merging. Merging the pull request into `main` closes the issue;
+deleting the merged source branch then completes branch cleanup. Deleting a
+branch by itself does not close an issue. Use a non-closing reference such as
+`Refs #ISSUE_NUMBER` only when a pull request deliberately delivers partial
+work and the issue must remain open.
+
 ## Documentation conventions
 
 Documentation source files use MyST Markdown and live in `proof_goblin/docs/`.

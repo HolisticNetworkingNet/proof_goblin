@@ -123,3 +123,18 @@ guidance for each provider failure, see the {doc}`Error Reference <errors>`.
 The example output schema follows OpenAI's strict-schema requirements: its root
 is an object, every object rejects additional properties, and every property is
 required.
+
+Proof Goblin checks those three constraints recursively before sending an
+OpenAI request: the root must have `type: object`; each object must define a
+`properties` object and set `additionalProperties: false`; and each object's
+`required` array must name every property. This is the provider adapter's
+enforced strict subset, not a promise that every otherwise valid JSON Schema
+keyword is accepted by OpenAI.
+
+After a response, the provider-neutral `Reviewer` selects the local validator
+from the configured schema's `$schema` declaration, checks that schema, and
+validates the decoded output against it. Configuration authors should declare
+the intended JSON Schema dialect explicitly rather than relying on the
+installed `jsonschema` library's default when `$schema` is absent. Provider
+strictness and local JSON Schema validation are separate checks; an output
+schema used with OpenAI must satisfy both.

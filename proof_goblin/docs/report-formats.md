@@ -22,6 +22,54 @@ boundary when a host needs to select or inject a renderer itself. Unsupported
 formats and prompt-inclusion combinations raise `ReportRenderError`; see the
 {doc}`Error Reference <errors>` for diagnostics and recovery.
 
+## Public Python contracts
+
+```python
+def render_report(
+    result: ReviewResult,
+    report_format: ReportFormat | str = ReportFormat.TEXT,
+    *,
+    include_prompt: bool = False,
+) -> str: ...
+
+def render_prompt(
+    prompt: Prompt,
+    prompt_format: PromptFormat | str = PromptFormat.TEXT,
+) -> str: ...
+```
+
+Both functions return the complete document as a Python string, including its
+final newline. A format can be the corresponding enum member or its exact,
+lowercase string value: `text`, `json`, `markdown`, or `html`. An unsupported
+report format raises `ReportRenderError`; an unsupported prompt format raises
+`PromptRenderError`.
+
+`ReportRenderer` is the public structural protocol for custom report
+renderers. Its method contract is:
+
+```python
+def render(
+    self,
+    result: ReviewResult,
+    *,
+    include_prompt: bool = False,
+) -> str: ...
+```
+
+Proof Goblin publishes `TextReportRenderer`, `JsonReportRenderer`,
+`MarkdownReportRenderer`, and `HtmlReportRenderer` implementations. Their
+`render()` methods have the same signature. `include_prompt=True` is accepted
+only by the JSON implementation; the other implementations raise
+`ReportRenderError` rather than silently ignoring it.
+
+At the CLI, `--format` selects standard output and defaults to text. An
+`--output` path instead selects its format by the case-insensitive final
+extension: `.txt` and `.text`, `.json`, `.md` and `.markdown`, or `.html` and
+`.htm`. Repeated output paths render the same result in multiple formats.
+`--format` and `--output` cannot be combined, so neither silently overrides the
+other. Output paths must be unique. `--include-prompt` requires at least one
+JSON output and affects only those JSON outputs.
+
 ## Report content
 
 Human-facing text, Markdown, and HTML reports include:
@@ -88,6 +136,10 @@ report. This prevents embedded HTML from becoming active when the Markdown is
 rendered by a system that permits raw HTML. Link delimiters are encoded so
 untrusted values cannot introduce active links or remote images; safe inline
 code remains available for identifiers such as configuration filenames.
+Specifically, inline values collapse line breaks to spaces, HTML-sensitive
+characters are escaped, square brackets become `&#91;` and `&#93;`, table pipes
+become `&#124;`, and backticks inside code cells become `&#96;`. Question and
+evidence line breaks are preserved inside block quotes.
 
 ## Standalone HTML
 
@@ -97,6 +149,10 @@ are escaped before interpolation into the document. The report can therefore
 display markup-like evidence as text without treating it as executable HTML.
 Metadata uses the same fixed four-column key/value structure without column
 spans or custom cell colors.
+
+Text, Markdown, and HTML timestamps use the host system's local timezone at
+render time. The public rendering API does not provide a timezone override.
+Canonical JSON always normalizes `created_at` to UTC.
 
 PDF is not currently supported. The renderer boundary allows another format to
 be added without coupling it to provider execution or CLI argument parsing.
@@ -127,3 +183,28 @@ HTML escapes dynamic values, while Markdown encloses prompt roles in dynamic
 code fences that cannot be closed by backticks in untrusted Artifact content.
 Hosts must apply sensitive-data access, retention, and deletion policies to all
 prompt renderings.
+
+## Versioned JSON schema contracts
+
+The assembled-prompt record has format identifier `proof-goblin-prompt`, schema
+version `1.0`, and published schema
+`proof_goblin/schemas/prompt.v1.schema.json`. The review-result record has
+format identifier `proof-goblin-review-result`, schema version `1.0`, and
+published schema `proof_goblin/schemas/review-result.v1.schema.json`. Their
+canonical schema identifiers are, respectively:
+
+- `https://proof-goblin.local/schemas/prompt.v1.schema.json`; and
+- `https://proof-goblin.local/schemas/review-result.v1.schema.json`.
+
+Both published schemas explicitly declare JSON Schema Draft 2020-12. Format
+identifiers distinguish the two document families; schema versions identify
+the contract within a family. Filenames are packaging locations, not values to
+substitute for either field.
+
+The prompt record always contains `review`, `config`, `artifact`, and `prompt`
+objects. The result record contains `created_at`, review attribution,
+configuration and artifact provenance, execution metadata, and normalized
+`observations`. Its optional `prompt` object appears only when prompt inclusion
+is explicitly requested. It does not serialize `ReviewResult.raw_output` as a
+second field: `observations` is the canonical normalized representation of the
+validated response.

@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import argparse
-import mimetypes
 import os
 import sys
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 
+from proof_goblin.artifacts import (
+    ArtifactMediaTypeError,
+    resolve_artifact_media_type,
+)
 from proof_goblin.builder import PromptBuilder, PromptBuildError
 from proof_goblin.cache import ReviewCache, ReviewCacheError
 from proof_goblin.config import Config, ConfigError
@@ -55,6 +58,7 @@ def main(
         return args.handler(args)
     except (
         CliError,
+        ArtifactMediaTypeError,
         ConfigError,
         InputLimitError,
         PromptBuildError,
@@ -166,7 +170,7 @@ def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--media-type",
-        help="artifact media type (guessed from the filename when omitted)",
+        help="explicit textual media type (inferred from the name when omitted)",
     )
 
 
@@ -298,7 +302,7 @@ def _load_inputs(
     config = Config.load(args.config, limits=limits)
     artifact, default_name = _read_artifact(args.artifact, limits=limits)
     artifact_name = args.artifact_name or default_name
-    media_type = args.media_type or _guess_media_type(artifact_name)
+    media_type = resolve_artifact_media_type(artifact_name, args.media_type)
     return config, artifact, artifact_name, media_type
 
 
@@ -335,11 +339,6 @@ def _read_limited_stdin(limits: InputLimits) -> str:
         limits.enforce_artifact(measured)
         chunks.append(chunk)
     return "".join(chunks)
-
-
-def _guess_media_type(artifact_name: str) -> str:
-    media_type, _ = mimetypes.guess_type(artifact_name)
-    return media_type or "text/plain"
 
 
 _FORMAT_EXTENSIONS = {

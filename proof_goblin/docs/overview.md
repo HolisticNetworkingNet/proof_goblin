@@ -95,11 +95,12 @@ form.
 ## Inputs and boundaries
 
 The library accepts an artifact as a Python string together with an artifact
-name and media type used for provenance. The CLI reads UTF-8 text from a file or
-standard input, guesses a media type from a filename when possible, and permits
-an explicit `--media-type` override. Binary artifacts are not currently
-supported. Proof Goblin does not impose a separate artifact-size limit, but the
-selected provider's request limits still apply.
+name and canonical textual media type used for provenance. The CLI and Python
+API use one fixed extension map, use `text/plain` for extensionless names, and
+require an explicit supported media type for unrecognized extensions. See
+{doc}`artifact-media-types` for the exact policy. Binary artifacts are not
+supported. Shared UTF-8 byte limits apply to artifact, configuration, and
+assembled prompt inputs as described in {doc}`input-limits`.
 
 Only live provider execution requires network access and credentials. Loading a
 configuration, assembling a prompt, reading a cached result, and rendering

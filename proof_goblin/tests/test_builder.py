@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from proof_goblin import Config, PromptBuilder, PromptBuildError
+from proof_goblin import (
+    ArtifactMediaTypeError,
+    Config,
+    PromptBuilder,
+    PromptBuildError,
+)
 
 PACKAGE_ROOT = Path(__file__).parents[1]
 EXAMPLE_CONFIG = PACKAGE_ROOT / "examples" / "restaurants.pgcfg"
@@ -95,7 +101,6 @@ def test_prompt_is_printable(builder: PromptBuilder) -> None:
     [
         ("artifact", ""),
         ("artifact_name", "  "),
-        ("artifact_media_type", ""),
     ],
 )
 def test_rejects_empty_artifact_input(
@@ -111,6 +116,47 @@ def test_rejects_empty_artifact_input(
 
     with pytest.raises(PromptBuildError, match=field):
         builder.build(**arguments)
+
+
+def test_builder_infers_and_records_canonical_media_type(
+    builder: PromptBuilder,
+) -> None:
+    inferred = builder.build(
+        review="homepage_first_pass",
+        artifact="Welcome",
+        artifact_name="DRAFT.MD",
+    )
+    explicit = builder.build(
+        review="homepage_first_pass",
+        artifact="Welcome",
+        artifact_name="draft.txt",
+        artifact_media_type=" TEXT/MARKDOWN ",
+    )
+
+    assert inferred.artifact_media_type == "text/markdown"
+    assert "Artifact media type: text/markdown" in inferred.user
+    assert explicit.artifact_media_type == "text/markdown"
+
+
+def test_builder_rejects_invalid_media_type(builder: PromptBuilder) -> None:
+    with pytest.raises(ArtifactMediaTypeError, match="bare ASCII type/subtype"):
+        builder.build(
+            review="homepage_first_pass",
+            artifact="Welcome",
+            artifact_name="draft.md",
+            artifact_media_type="text/markdown; charset=utf-8",
+        )
+
+
+def test_prompt_rejects_noncanonical_media_type(builder: PromptBuilder) -> None:
+    prompt = builder.build(
+        review="homepage_first_pass",
+        artifact="Welcome",
+        artifact_name="draft.md",
+    )
+
+    with pytest.raises(ArtifactMediaTypeError, match="must already be canonical"):
+        replace(prompt, artifact_media_type="TEXT/MARKDOWN")
 
 
 @pytest.mark.parametrize(

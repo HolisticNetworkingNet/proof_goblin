@@ -203,8 +203,9 @@ The default location is the platform's per-user cache area, including
 
 ## Standard Input
 
-Use `-` as the artifact path to read UTF-8 content from standard input. Specify
-a media type when it cannot be inferred from a filename:
+Use `-` as the artifact path to read UTF-8 content from standard input. The
+artifact name `stdin` falls back to `text/plain`; supply `--artifact-name` to
+enable deterministic extension inference or `--media-type` to override it:
 
 ```bash
 printf '%s\n' '# Draft documentation' | proof-goblin prompt - \
@@ -213,6 +214,11 @@ printf '%s\n' '# Draft documentation' | proof-goblin prompt - \
   --artifact-name draft.md \
   --media-type text/markdown
 ```
+
+Explicit values are normalized and restricted to supported textual media
+types. Unrecognized extensions require this explicit override. See
+{doc}`artifact-media-types` for the fixed extension map, extensionless fallback,
+syntax, and errors.
 
 Run `proof-goblin --help`, `proof-goblin prompt --help`, or
 `proof-goblin review --help` for the complete option reference. The equivalent

@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from proof_goblin.artifacts import ArtifactMediaTypeError, resolve_artifact_media_type
 from proof_goblin.config import Config, ReviewDefinition
 from proof_goblin.limits import DEFAULT_INPUT_LIMITS, InputLimits, PromptMeasurements
 
@@ -41,6 +42,16 @@ class Prompt:
     artifact_media_type: str
     artifact_sha256: str
     measurements: PromptMeasurements
+
+    def __post_init__(self) -> None:
+        canonical_media_type = resolve_artifact_media_type(
+            self.artifact_name,
+            self.artifact_media_type,
+        )
+        if canonical_media_type != self.artifact_media_type:
+            raise ArtifactMediaTypeError(
+                "Prompt artifact_media_type must already be canonical"
+            )
 
     def __str__(self) -> str:
         """Render both prompt roles for direct inspection."""
@@ -80,14 +91,15 @@ class PromptBuilder:
         review: str,
         artifact: str,
         artifact_name: str = "artifact",
-        artifact_media_type: str = "text/plain",
+        artifact_media_type: str | None = None,
     ) -> Prompt:
         """Assemble and enforce limits for a named review and text artifact."""
 
         artifact = _require_non_empty_string(artifact, "artifact")
         artifact_name = _require_non_empty_string(artifact_name, "artifact_name")
-        artifact_media_type = _require_non_empty_string(
-            artifact_media_type, "artifact_media_type"
+        artifact_media_type = resolve_artifact_media_type(
+            artifact_name,
+            artifact_media_type,
         )
         resolved = self.resolve(review)
 

@@ -104,6 +104,12 @@ Output Schema; and `[USER]`, containing artifact metadata and the artifact to be
 reviewed. Inspecting this output is a useful check before incurring an API
 request.
 
+The `.md` extension deterministically resolves to `text/markdown`.
+Extensionless names fall back to `text/plain`; unrecognized extensions require
+`--media-type` so unfamiliar files are reviewed only deliberately. An explicit
+supported textual type also overrides a recognized filename. See
+{doc}`artifact-media-types` for the complete policy.
+
 An invalid path, malformed configuration, unknown review name, or empty
 artifact produces a `proof-goblin: error:` message and a nonzero exit status.
 See {doc}`command-line-interface` for the complete command reference.

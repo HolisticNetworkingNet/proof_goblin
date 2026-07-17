@@ -73,7 +73,7 @@ class ProofService:
         *,
         artifact: str,
         artifact_name: str,
-        artifact_media_type: str,
+        artifact_media_type: str | None = None,
         review: str,
     ) -> ReviewResult:
         return self.reviewer.review(
@@ -127,11 +127,15 @@ the required policy and pass it as `OpenAIProvider(client=client, model=...)`.
 | `review` | A non-empty identifier present in `config.reviews`. |
 | `artifact` | A non-empty Python string containing the complete text to review. |
 | `artifact_name` | A non-empty descriptive string; defaults to `artifact`. |
-| `artifact_media_type` | A non-empty descriptive string; defaults to `text/plain`. |
+| `artifact_media_type` | Optional supported textual `type/subtype`; inferred from `artifact_name` when omitted. |
 
-Proof Goblin does not infer or validate media types in the Python API. The host
-must decode files or responses to text and select an accurate media type.
-Proof Goblin does enforce its shared artifact and assembled-prompt byte limits;
+Explicit media types are normalized and validated; when omitted, the Python API
+uses the same fixed extension mapping as the CLI. Extensionless names fall back
+to `text/plain`, while unrecognized extensions require an explicit value.
+Hosts remain responsible for decoding files or responses to text and selecting
+an accurate explicit value when the name is insufficient. See
+{doc}`artifact-media-types` for the accepted syntax and textual-content policy.
+Proof Goblin also enforces its shared artifact and assembled-prompt byte limits;
 hosts may pass a lower or deliberately higher `InputLimits` policy. See
 {doc}`input-limits` for defaults, measurements, and provider preflight.
 

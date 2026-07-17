@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from io import StringIO
 from pathlib import Path
@@ -133,6 +134,21 @@ def test_prompt_command_reads_standard_input(
     assert '"name":"stdin"' in captured.out
     assert '"media_type":"text/markdown"' in captured.out
     assert "# Documentation" in captured.out
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires privileges")
+def test_artifact_read_follows_resolved_symlink_but_keeps_selected_name(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "target.txt"
+    selected = tmp_path / "selected.md"
+    target.write_text("Linked artifact", encoding="utf-8")
+    selected.symlink_to(target)
+
+    content, name = cli._read_artifact(str(selected))
+
+    assert content == "Linked artifact"
+    assert name == "selected.md"
 
 
 def test_prompt_command_prints_versioned_json(
@@ -993,6 +1009,76 @@ def test_failed_atomic_write_preserves_existing_report(
     assert "could not write report" in captured.err
     assert output_path.read_text(encoding="utf-8") == "existing report\n"
     assert not list(output_path.parent.glob(f".{output_path.name}.*.tmp"))
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires privileges")
+def test_atomic_output_replaces_symlink_instead_of_following_it(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "target.txt"
+    output = tmp_path / "output.txt"
+    target.write_text("target remains\n", encoding="utf-8")
+    output.symlink_to(target)
+
+    cli._write_output(output, "new output\n", noun="report")
+
+    assert not output.is_symlink()
+    assert output.read_text(encoding="utf-8") == "new output\n"
+    assert target.read_text(encoding="utf-8") == "target remains\n"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permission policy")
+def test_atomic_output_preserves_existing_regular_file_mode(tmp_path: Path) -> None:
+    output = tmp_path / "output.txt"
+    output.write_text("old output\n", encoding="utf-8")
+    output.chmod(0o640)
+
+    cli._write_output(output, "new output\n", noun="report")
+
+    assert output.read_text(encoding="utf-8") == "new output\n"
+    assert output.stat().st_mode & 0o777 == 0o640
+
+
+def test_multi_output_failure_leaves_completed_files(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    outputs = (
+        artifact_path.with_name("first.md"),
+        artifact_path.with_name("second.html"),
+        artifact_path.with_name("third.json"),
+    )
+    real_replace = os.replace
+    replacements = 0
+
+    def fail_second_replace(source: object, destination: object) -> None:
+        nonlocal replacements
+        replacements += 1
+        if replacements == 2:
+            raise OSError("simulated second-output failure")
+        real_replace(source, destination)
+
+    monkeypatch.setattr(cli.os, "replace", fail_second_replace)
+
+    exit_code = cli.main(
+        [
+            "prompt",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            *(argument for output in outputs for argument in ("--output", str(output))),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "could not write prompt" in captured.err
+    assert outputs[0].is_file()
+    assert not outputs[1].exists()
+    assert not outputs[2].exists()
 
 
 def test_cli_reports_missing_artifact(

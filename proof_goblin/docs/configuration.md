@@ -262,7 +262,10 @@ therefore continues to use the explicitly supplied `sha256` value or `None`.
 `Config.source_path` is the absolute path produced by `Path.resolve()`—including
 resolution of symbolic links—and `Config.sha256` is the SHA-256 digest of those
 exact bytes. Consequently, even a whitespace-only file change produces a
-different digest.
+different digest. Size inspection, reading, and hashing use one opened regular
+file; `source_path` remains an informational name rather than authenticated
+file identity. See {doc}`filesystem-boundaries` for concurrent replacement and
+symbolic-link behavior.
 
 An assembled prompt carries the bundle name, bundle version, and digest. A
 `ReviewResult` records those values along with the review identifier,

@@ -10,6 +10,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
+from proof_goblin.filesystem import read_limited_regular_file
 from proof_goblin.limits import DEFAULT_INPUT_LIMITS, InputLimitError, InputLimits
 
 CONFIG_FORMAT = "proof-goblin-config"
@@ -114,11 +115,11 @@ class Config:
             )
 
         try:
-            size = source_path.stat().st_size
-            limits.enforce_config(size)
-            with source_path.open("rb") as stream:
-                content = stream.read(limits.max_config_bytes + 1)
-            limits.enforce_config(len(content))
+            content, resolved_source_path = read_limited_regular_file(
+                source_path,
+                max_bytes=limits.max_config_bytes,
+                enforce_limit=limits.enforce_config,
+            )
         except InputLimitError:
             raise
         except OSError as exc:
@@ -138,7 +139,7 @@ class Config:
 
         return cls.from_mapping(
             data,
-            source_path=source_path.resolve(),
+            source_path=resolved_source_path,
             sha256=hashlib.sha256(content).hexdigest(),
         )
 

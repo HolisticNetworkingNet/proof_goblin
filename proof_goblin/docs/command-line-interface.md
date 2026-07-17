@@ -10,7 +10,9 @@ reservation, or provider execution. Configuration files, artifact files,
 standard input, the assembled system prompt, and the complete prompt are
 bounded deterministically in UTF-8 bytes. Oversized input is rejected without
 echoing its content; no input is silently truncated. See {doc}`input-limits`
-for the default ceilings and Python host configuration.
+for the default ceilings and Python host configuration. File inputs are bound
+to one opened regular file; see {doc}`filesystem-boundaries` for symbolic-link
+and concurrent-replacement behavior.
 
 ## Inspect a Prompt
 
@@ -140,7 +142,8 @@ been encoded and flushed. A failed write reports an error and does not replace
 an existing report with partial output. When several destinations are
 requested, an earlier file may already have been written before a later write
 fails. See the {doc}`Error Reference <errors>` for output-failure recovery and
-diagnostic-sensitivity guidance.
+diagnostic-sensitivity guidance, and {doc}`filesystem-boundaries` for the exact
+replacement, symbolic-link, permission, and partial-completion contract.
 
 ## JSON prompt retention
 
@@ -201,7 +204,9 @@ Cached entries are canonical JSON records without the system prompt, user
 prompt, or complete artifact body. They can contain model-produced evidence
 quoted from the artifact and should still be treated as potentially sensitive.
 Proof Goblin creates the cache directory and files with user-only permissions
-where the operating system supports them.
+where the operating system supports them. POSIX cache directories and entries
+must also satisfy the ownership, regular-file, and symbolic-link rules in
+{doc}`filesystem-boundaries`; Windows ACL inspection is not provided.
 
 Completed cache entries do not expire automatically, and the CLI does not
 provide a cache-deletion command. The operator owns retention and deletion of

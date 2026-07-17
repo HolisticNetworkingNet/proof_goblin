@@ -104,6 +104,7 @@ class ReviewCache:
 
         if key != self.key_for(request):
             raise ReviewCacheError("review cache key does not match request identity")
+        self._prepare_directory()
         version_two_key = self._version_two_key_for(
             prompt,
             provider=request.provider,
@@ -121,7 +122,7 @@ class ReviewCache:
 
         for path, is_legacy in candidates:
             try:
-                serialized = path.read_text(encoding="utf-8")
+                serialized = self._read_entry(path)
             except FileNotFoundError:
                 continue
             except (OSError, UnicodeError) as exc:
@@ -159,7 +160,11 @@ class ReviewCache:
     def has_entry(self, key: str) -> bool:
         """Return whether the exact current-version cache path exists."""
 
-        return self._result_path(key).is_file()
+        try:
+            entry = self._result_path(key).lstat()
+        except FileNotFoundError:
+            return False
+        return stat.S_ISREG(entry.st_mode)
 
     def store(
         self,
@@ -236,17 +241,26 @@ class ReviewCache:
                 pass
 
     def _prepare_directory(self) -> None:
-        existed = self.directory.exists()
         try:
-            self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-            if not existed:
+            try:
+                directory = self.directory.lstat()
+            except FileNotFoundError:
+                self.directory.mkdir(mode=0o700, parents=True)
                 self.directory.chmod(0o700)
-            elif (
-                os.name != "nt" and stat.S_IMODE(self.directory.stat().st_mode) & 0o077
-            ):
+                directory = self.directory.lstat()
+            if stat.S_ISLNK(directory.st_mode):
                 raise ReviewCacheError(
-                    f"review cache {self.directory} must have user-only permissions"
+                    f"review cache directory {self.directory} must not be a symbolic link"
                 )
+            if not stat.S_ISDIR(directory.st_mode):
+                raise ReviewCacheError(
+                    f"review cache {self.directory} must be a directory"
+                )
+            _require_private_posix_entry(
+                directory,
+                self.directory,
+                "review cache directory",
+            )
         except ReviewCacheError:
             raise
         except OSError as exc:
@@ -256,6 +270,37 @@ class ReviewCache:
 
     def _result_path(self, key: str) -> Path:
         return self.directory / f"{key}.json"
+
+    @staticmethod
+    def _read_entry(path: Path) -> str:
+        entry = path.lstat()
+        if stat.S_ISLNK(entry.st_mode):
+            raise ReviewCacheError(
+                f"review cache entry {path} must not be a symbolic link"
+            )
+
+        descriptor: int | None = None
+        try:
+            flags = (
+                os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+            )
+            descriptor = os.open(path, flags)
+            opened = os.fstat(descriptor)
+            if not stat.S_ISREG(opened.st_mode):
+                raise ReviewCacheError(
+                    f"review cache entry {path} must be a regular file"
+                )
+            _require_private_posix_entry(
+                opened,
+                path,
+                "review cache entry",
+            )
+            with os.fdopen(descriptor, "rb") as stream:
+                descriptor = None
+                return stream.read().decode("utf-8")
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
 
     @staticmethod
     def _create_lock(path: Path) -> int:
@@ -271,7 +316,17 @@ class ReviewCache:
     @staticmethod
     def _remove_stale_lock(path: Path) -> bool:
         try:
-            modified_at = datetime.fromtimestamp(path.stat().st_mtime, UTC)
+            lock = path.lstat()
+            if stat.S_ISLNK(lock.st_mode) or not stat.S_ISREG(lock.st_mode):
+                raise ReviewCacheError(
+                    f"review cache reservation {path} must be a regular file"
+                )
+            _require_private_posix_entry(
+                lock,
+                path,
+                "review cache reservation",
+            )
+            modified_at = datetime.fromtimestamp(lock.st_mtime, UTC)
             if datetime.now(UTC) - modified_at < STALE_LOCK_AGE:
                 return False
             path.unlink()
@@ -282,6 +337,19 @@ class ReviewCache:
             raise ReviewCacheError(
                 f"could not inspect review cache reservation {path}: {exc}"
             ) from exc
+
+
+def _require_private_posix_entry(
+    entry: os.stat_result,
+    path: Path,
+    noun: str,
+) -> None:
+    if os.name == "nt":
+        return
+    if hasattr(os, "geteuid") and entry.st_uid != os.geteuid():
+        raise ReviewCacheError(f"{noun} {path} must be owned by the current user")
+    if stat.S_IMODE(entry.st_mode) & 0o077:
+        raise ReviewCacheError(f"{noun} {path} must have user-only permissions")
 
 
 def _cached_prompt(record: Mapping[str, Any], current: Prompt) -> Prompt:

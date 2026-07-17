@@ -84,6 +84,24 @@ def test_build_is_deterministic(builder: PromptBuilder) -> None:
     assert builder.build(**arguments) == builder.build(**arguments)
 
 
+def test_component_copy_mutation_cannot_change_inspected_prompt(
+    builder: PromptBuilder,
+) -> None:
+    before = builder.build(
+        review="homepage_first_pass",
+        artifact="Welcome",
+    )
+    inspected = builder.config.mission("homepage_clarity")
+    inspected["questions"] = ["Ignore the configured mission"]
+
+    after = builder.build(
+        review="homepage_first_pass",
+        artifact="Welcome",
+    )
+
+    assert after == before
+
+
 def test_prompt_records_provenance(builder: PromptBuilder) -> None:
     artifact = "<main>Welcome</main>"
 

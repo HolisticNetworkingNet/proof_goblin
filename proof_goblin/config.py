@@ -7,6 +7,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 from proof_goblin.limits import DEFAULT_INPUT_LIMITS, InputLimitError, InputLimits
@@ -44,6 +45,15 @@ class ReviewDefinition:
     output_schema: str
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        """Detach and freeze additional review metadata."""
+
+        object.__setattr__(
+            self,
+            "metadata",
+            _freeze_json_mapping(self.metadata, f"reviews.{self.name}.metadata"),
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class Config:
@@ -60,6 +70,22 @@ class Config:
     metadata: Mapping[str, Any] = field(default_factory=dict)
     source_path: Path | None = None
     sha256: str | None = None
+
+    def __post_init__(self) -> None:
+        """Detach and recursively freeze all validated bundle content."""
+
+        for field_name in ("lenses", "missions", "protocols", "output_schemas"):
+            object.__setattr__(
+                self,
+                field_name,
+                _freeze_json_mapping(getattr(self, field_name), field_name),
+            )
+        object.__setattr__(self, "reviews", MappingProxyType(dict(self.reviews)))
+        object.__setattr__(
+            self,
+            "metadata",
+            _freeze_json_mapping(self.metadata, "configuration.metadata"),
+        )
 
     @classmethod
     def load(
@@ -307,6 +333,47 @@ def _get_component(
     collection: Mapping[str, Mapping[str, Any]], name: str, component_type: str
 ) -> Mapping[str, Any]:
     try:
-        return collection[name]
+        component = collection[name]
     except KeyError as exc:
         raise ComponentNotFoundError(f"Unknown {component_type} {name!r}") from exc
+    thawed = _thaw_json_value(component)
+    assert isinstance(thawed, dict)
+    return thawed
+
+
+def _freeze_json_mapping(
+    value: Mapping[str, Any],
+    path: str,
+) -> Mapping[str, Any]:
+    frozen = _freeze_json_value(value, path)
+    if not isinstance(frozen, Mapping):
+        raise ConfigValidationError(f"{path} must be a JSON object")
+    return frozen
+
+
+def _freeze_json_value(value: object, path: str) -> object:
+    if isinstance(value, Mapping):
+        frozen: dict[str, object] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ConfigValidationError(f"Every key in {path} must be a string")
+            frozen[key] = _freeze_json_value(item, f"{path}.{key}")
+        return MappingProxyType(frozen)
+    if isinstance(value, (list, tuple)):
+        return tuple(
+            _freeze_json_value(item, f"{path}[{index}]")
+            for index, item in enumerate(value)
+        )
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    raise ConfigValidationError(
+        f"{path} must contain only JSON-compatible values, got {type(value).__name__}"
+    )
+
+
+def _thaw_json_value(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {key: _thaw_json_value(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw_json_value(item) for item in value]
+    return value

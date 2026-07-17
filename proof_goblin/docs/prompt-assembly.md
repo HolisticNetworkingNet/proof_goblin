@@ -94,11 +94,31 @@ artifact name. An explicit supported value would take precedence.
   UTF-8 byte counts.
 
 The `system` and `user` values remain separate so a provider can preserve their
-message roles. Artifact content is confined to the user prompt and explicitly
-marked as untrusted review material. Empty artifact text or names raise
-`PromptBuildError`. Invalid or unsupported media types raise
-`ArtifactMediaTypeError`; see {doc}`artifact-media-types` for inference,
-normalization, and the supported textual boundary.
+message roles. Artifact metadata and content are confined to the user prompt
+and explicitly marked as untrusted review material.
+
+The artifact name is not interpolated as prompt syntax. Proof Goblin encodes an
+ASCII-only compact JSON metadata object containing `name`, canonical
+`media_type`, and `utf8_bytes`. JSON escaping keeps newlines, Unicode line
+separators, control characters, quotes, and other filename content inside the
+`name` string.
+
+The artifact body remains exact and readable rather than being escaped. It is
+enclosed by matching markers containing a deterministic boundary token derived
+from its SHA-256 digest. Prompt assembly verifies that the selected token does
+not occur anywhere in the artifact; if it does, a numeric suffix is advanced
+until the token is absent. Fixed marker text reproduced by an artifact can
+therefore remain review material without terminating the frame. The byte count
+in metadata provides an additional exact measurement of the framed content.
+
+This representation makes prompt construction unambiguous; it does not make
+the artifact trustworthy or eliminate model prompt-injection risk. The system
+instructions still direct the provider to treat both metadata and content only
+as material to review.
+
+Empty artifact text or names raise `PromptBuildError`. Invalid or unsupported
+media types raise `ArtifactMediaTypeError`; see {doc}`artifact-media-types` for
+inference, normalization, and the supported textual boundary.
 Input that exceeds the builder's `InputLimits` raises `InputLimitError` without
 including input text in the diagnostic. See {doc}`input-limits` for the default
 ceilings and host configuration interface, and the {doc}`Error Reference
@@ -141,6 +161,12 @@ The configuration digest is calculated from the original `.pgcfg` bytes. The
 artifact digest is calculated from the UTF-8 encoding of the artifact string.
 These SHA-256 values identify the inputs; they do not conceal the artifact or
 make a rendered prompt safe to publish.
+
+Prompt framing is part of the prepared provider request and therefore part of
+cache identity. This framing format produces a new request identity and a safe
+cache miss for results generated with the previous fixed delimiters. The
+artifact digest itself remains a hash of only the exact artifact UTF-8 bytes,
+not its metadata or framing.
 
 ## What happens next
 

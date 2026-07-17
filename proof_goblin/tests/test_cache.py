@@ -53,6 +53,23 @@ def test_cache_key_changes_with_model_or_prompt(tmp_path: Path) -> None:
     assert baseline != cache.key_for(make_request(changed_prompt))
 
 
+def test_cache_key_includes_framed_artifact_metadata(tmp_path: Path) -> None:
+    cache = ReviewCache(tmp_path)
+    builder = PromptBuilder(Config.load(EXAMPLE_CONFIG))
+    first = builder.build(
+        review="homepage_first_pass",
+        artifact="Same content",
+        artifact_name="first.txt",
+    )
+    second = builder.build(
+        review="homepage_first_pass",
+        artifact="Same content",
+        artifact_name="second.txt",
+    )
+
+    assert cache.key_for(make_request(first)) != cache.key_for(make_request(second))
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [

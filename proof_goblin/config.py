@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from proof_goblin.limits import DEFAULT_INPUT_LIMITS, InputLimitError, InputLimits
+
 CONFIG_FORMAT = "proof-goblin-config"
 SUPPORTED_SCHEMA_VERSIONS = frozenset({"1.0"})
 
@@ -60,16 +62,23 @@ class Config:
     sha256: str | None = None
 
     @classmethod
-    def load(cls, path: str | Path) -> Config:
+    def load(
+        cls,
+        path: str | Path,
+        *,
+        limits: InputLimits = DEFAULT_INPUT_LIMITS,
+    ) -> Config:
         """Load and validate a JSON-encoded ``.pgcfg`` file.
 
         Args:
             path: Path to the configuration bundle.
+            limits: Deterministic byte ceilings applied before parsing.
 
         Raises:
             ConfigParseError: If the file cannot be read or contains invalid JSON.
             ConfigValidationError: If the decoded data does not match the supported
                 Proof Goblin configuration structure.
+            InputLimitError: If the original file exceeds the configured ceiling.
         """
 
         source_path = Path(path)
@@ -79,7 +88,13 @@ class Config:
             )
 
         try:
-            content = source_path.read_bytes()
+            size = source_path.stat().st_size
+            limits.enforce_config(size)
+            with source_path.open("rb") as stream:
+                content = stream.read(limits.max_config_bytes + 1)
+            limits.enforce_config(len(content))
+        except InputLimitError:
+            raise
         except OSError as exc:
             raise ConfigParseError(
                 f"Could not read configuration file {source_path}: {exc}"

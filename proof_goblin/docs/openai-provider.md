@@ -8,6 +8,13 @@ The core `Reviewer` remains provider-neutral. It validates the returned data
 against the same configured JSON Schema before constructing `Observation`
 objects.
 
+Before generation, `Reviewer` runs provider preflight. The OpenAI adapter
+validates its strict structured-output request, sets an explicit maximum output
+allowance, and disables automatic truncation. Its default preflight capacity
+status is `unknown`: Proof Goblin does not maintain a model-context catalog or
+make a separate remote token-count request for every review. See
+{doc}`input-limits` for the complete contract.
+
 ## Install the optional integration
 
 ```bash
@@ -67,6 +74,11 @@ for observation in result.observations:
 `ReviewResult` also records the provider, resolved model, response identifier,
 token usage, assembled prompt, raw structured output, and configuration and
 artifact provenance carried by the prompt.
+
+`OpenAIProvider(max_output_tokens=...)` changes the positive output-token
+allowance used in both preflight and the Responses API request. The default is
+8,192. An application can inspect readiness without generating output by
+calling `Reviewer.preflight()` with the same review arguments.
 
 ## Errors
 

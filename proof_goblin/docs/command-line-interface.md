@@ -5,6 +5,13 @@ inspecting an assembled prompt and executing a live review. The CLI is a thin
 interface over the same `Config`, `PromptBuilder`, and `Reviewer` APIs used by
 host applications.
 
+Both commands apply the shared default input limits before output, cache
+reservation, or provider execution. Configuration files, artifact files,
+standard input, the assembled system prompt, and the complete prompt are
+bounded deterministically in UTF-8 bytes. Oversized input is rejected without
+echoing its content; no input is silently truncated. See {doc}`input-limits`
+for the default ceilings and Python host configuration.
+
 ## Inspect a Prompt
 
 The `prompt` command loads a configuration, resolves a named review, and prints

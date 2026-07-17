@@ -46,6 +46,7 @@ from pathlib import Path
 
 from proof_goblin import (
     DEFAULT_OPENAI_MODEL,
+    DEFAULT_INPUT_LIMITS,
     Config,
     OpenAIProvider,
     ReviewResult,
@@ -60,8 +61,11 @@ class ProofService:
         *,
         model: str = DEFAULT_OPENAI_MODEL,
     ) -> None:
-        self.config = Config.load(config_path)
-        self.reviewer = Reviewer(OpenAIProvider(model=model))
+        self.config = Config.load(config_path, limits=DEFAULT_INPUT_LIMITS)
+        self.reviewer = Reviewer(
+            OpenAIProvider(model=model),
+            limits=DEFAULT_INPUT_LIMITS,
+        )
 
     def review_artifact(
         self,
@@ -124,10 +128,11 @@ the required policy and pass it as `OpenAIProvider(client=client, model=...)`.
 | `artifact_name` | A non-empty descriptive string; defaults to `artifact`. |
 | `artifact_media_type` | A non-empty descriptive string; defaults to `text/plain`. |
 
-Proof Goblin does not infer or validate media types in the Python API and does
-not currently impose an artifact-size limit. The host must decode files or
-responses to text, select an accurate media type, and enforce provider context,
-cost, upload, and application limits before calling the reviewer.
+Proof Goblin does not infer or validate media types in the Python API. The host
+must decode files or responses to text and select an accurate media type.
+Proof Goblin does enforce its shared artifact and assembled-prompt byte limits;
+hosts may pass a lower or deliberately higher `InputLimits` policy. See
+{doc}`input-limits` for defaults, measurements, and provider preflight.
 
 The artifact digest is SHA-256 over `artifact.encode("utf-8")`; Proof Goblin
 does not normalize newlines or other characters first. The configuration digest
@@ -160,6 +165,8 @@ them into job, API, or user-visible states:
 - `ConfigError` covers configuration parsing, validation, and missing
   components;
 - `PromptBuildError` covers invalid prompt inputs;
+- `InputLimitError` covers deterministic configuration, artifact, and prompt
+  byte ceilings;
 - `ProviderError` covers provider initialization, request, quota, rate-limit,
   refusal, and response failures;
 - `ReviewOutputValidationError` covers an invalid configured schema or provider
@@ -171,6 +178,7 @@ For example:
 ```python
 from proof_goblin import (
     ConfigError,
+    InputLimitError,
     PromptBuildError,
     ProviderError,
     ReviewOutputValidationError,
@@ -186,6 +194,9 @@ try:
     )
 except ConfigError:
     # Treat as a deployment or configuration defect.
+    raise
+except InputLimitError:
+    # Reject input that exceeds the host's configured deterministic boundary.
     raise
 except PromptBuildError:
     # Reject or correct the host-supplied artifact metadata.

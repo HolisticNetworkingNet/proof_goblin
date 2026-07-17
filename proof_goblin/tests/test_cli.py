@@ -8,7 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from proof_goblin import ProviderResponse, TokenUsage, cli
+from proof_goblin import (
+    ProviderPreflight,
+    ProviderRequestError,
+    ProviderResponse,
+    TokenUsage,
+    cli,
+)
 
 PACKAGE_ROOT = Path(__file__).parents[1]
 EXAMPLE_CONFIG = PACKAGE_ROOT / "examples" / "restaurants.pgcfg"
@@ -38,6 +44,13 @@ class FakeProvider:
             model=self.response_model or self.model,
             response_id="resp_cli_test",
             usage=TokenUsage(input_tokens=50, output_tokens=20, total_tokens=70),
+        )
+
+    def preflight(self, prompt, output_schema) -> ProviderPreflight:
+        return ProviderPreflight.assess(
+            provider="openai",
+            model=self.model,
+            max_output_tokens=100,
         )
 
 
@@ -473,6 +486,36 @@ def test_refresh_replaces_matching_cached_result(
     assert cli.main([*arguments, "--refresh"]) == 0
 
     assert FakeProvider.calls == 2
+
+
+def test_provider_preflight_failure_does_not_reserve_cache(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    class IncompatibleProvider(FakeProvider):
+        def preflight(self, prompt, output_schema) -> ProviderPreflight:
+            raise ProviderRequestError("request is incompatible")
+
+    monkeypatch.setattr(cli, "OpenAIProvider", IncompatibleProvider)
+
+    exit_code = cli.main(
+        [
+            "review",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "request is incompatible" in captured.err
+    assert IncompatibleProvider.calls == 0
+    assert not (tmp_path / "cache").exists()
 
 
 def test_cached_result_excludes_prompt_and_artifact_body(

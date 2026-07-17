@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from proof_goblin.config import Config, ReviewDefinition
+from proof_goblin.limits import DEFAULT_INPUT_LIMITS, InputLimits, PromptMeasurements
 
 
 class PromptBuildError(ValueError):
@@ -39,6 +40,7 @@ class Prompt:
     artifact_name: str
     artifact_media_type: str
     artifact_sha256: str
+    measurements: PromptMeasurements
 
     def __str__(self) -> str:
         """Render both prompt roles for direct inspection."""
@@ -49,8 +51,16 @@ class Prompt:
 class PromptBuilder:
     """Build deterministic prompts from a validated configuration bundle."""
 
-    def __init__(self, config: Config) -> None:
+    def __init__(
+        self,
+        config: Config,
+        *,
+        limits: InputLimits = DEFAULT_INPUT_LIMITS,
+    ) -> None:
+        """Create a builder using explicit or default deterministic limits."""
+
         self.config = config
+        self.limits = limits
 
     def resolve(self, review: str) -> ResolvedReview:
         """Resolve all component references for a named review."""
@@ -72,7 +82,7 @@ class PromptBuilder:
         artifact_name: str = "artifact",
         artifact_media_type: str = "text/plain",
     ) -> Prompt:
-        """Assemble a prompt for a named review and text artifact."""
+        """Assemble and enforce limits for a named review and text artifact."""
 
         artifact = _require_non_empty_string(artifact, "artifact")
         artifact_name = _require_non_empty_string(artifact_name, "artifact_name")
@@ -97,6 +107,12 @@ class PromptBuilder:
             f"{artifact}\n"
             "--- END UNTRUSTED ARTIFACT ---"
         )
+        measurements = PromptMeasurements.measure(
+            artifact=artifact,
+            system=system,
+            user=user,
+        )
+        measurements.enforce(self.limits)
 
         return Prompt(
             system=system,
@@ -108,6 +124,7 @@ class PromptBuilder:
             artifact_name=artifact_name,
             artifact_media_type=artifact_media_type,
             artifact_sha256=hashlib.sha256(artifact.encode("utf-8")).hexdigest(),
+            measurements=measurements,
         )
 
 

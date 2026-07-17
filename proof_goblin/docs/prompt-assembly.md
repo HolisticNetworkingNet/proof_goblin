@@ -85,12 +85,17 @@ prompt = builder.build(
 - `user` — the artifact, its name, and its media type;
 - `review_name`, `config_name`, and `config_version`;
 - `config_sha256`; and
-- `artifact_name`, `artifact_media_type`, and `artifact_sha256`.
+- `artifact_name`, `artifact_media_type`, and `artifact_sha256`; and
+- `measurements`, containing artifact, system-prompt, user-prompt, and total
+  UTF-8 byte counts.
 
 The `system` and `user` values remain separate so a provider can preserve their
 message roles. Artifact content is confined to the user prompt and explicitly
 marked as untrusted review material. Empty artifact text, artifact names, or
 media types raise `PromptBuildError`.
+Input that exceeds the builder's `InputLimits` raises `InputLimitError` without
+including input text in the diagnostic. See {doc}`input-limits` for the default
+ceilings and host configuration interface.
 
 ## 4. Inspect or render the result
 

@@ -20,6 +20,7 @@ bundled-documentation-reviews
 command-line-interface
 configuration
 prompt-assembly
+artifact-media-types
 input-limits
 openai-provider
 report-formats

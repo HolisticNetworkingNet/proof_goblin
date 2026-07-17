@@ -1,5 +1,10 @@
 """Proof Goblin public package interface."""
 
+from proof_goblin.artifacts import (
+    DEFAULT_ARTIFACT_MEDIA_TYPE,
+    ArtifactMediaTypeError,
+    resolve_artifact_media_type,
+)
 from proof_goblin.builder import (
     Prompt,
     PromptBuilder,
@@ -74,8 +79,10 @@ from proof_goblin.reviewer import (
 
 __all__ = [
     "CONFIG_FORMAT",
+    "DEFAULT_ARTIFACT_MEDIA_TYPE",
     "SUPPORTED_SCHEMA_VERSIONS",
     "ComponentNotFoundError",
+    "ArtifactMediaTypeError",
     "Config",
     "ConfigError",
     "ConfigParseError",
@@ -128,4 +135,5 @@ __all__ = [
     "TokenUsage",
     "render_prompt",
     "render_report",
+    "resolve_artifact_media_type",
 ]

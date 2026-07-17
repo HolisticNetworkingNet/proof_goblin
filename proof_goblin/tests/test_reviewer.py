@@ -7,6 +7,7 @@ import pytest
 
 from proof_goblin import (
     DEFAULT_INPUT_LIMITS,
+    ArtifactMediaTypeError,
     Config,
     InputLimitError,
     ProviderCapacityStatus,
@@ -105,6 +106,33 @@ def test_reviewer_accepts_no_observations() -> None:
     )
 
     assert result.observations == ()
+
+
+def test_reviewer_infers_canonical_media_type_for_result_provenance() -> None:
+    result = Reviewer(FakeProvider({"observations": []})).review(
+        config=Config.load(EXAMPLE_CONFIG),
+        review="homepage_first_pass",
+        artifact="A complete homepage",
+        artifact_name="PAGE.HTML",
+    )
+
+    assert result.prompt.artifact_media_type == "text/html"
+    assert result.to_dict()["artifact"]["media_type"] == "text/html"
+
+
+def test_reviewer_rejects_invalid_media_type_before_provider_preflight() -> None:
+    class NeverProvider:
+        def preflight(self, prompt, output_schema):
+            raise AssertionError("provider preflight must not run")
+
+    with pytest.raises(ArtifactMediaTypeError, match="decoded textual artifacts"):
+        Reviewer(NeverProvider()).review(
+            config=Config.load(EXAMPLE_CONFIG),
+            review="homepage_first_pass",
+            artifact="A complete homepage",
+            artifact_name="page.html",
+            artifact_media_type="image/png",
+        )
 
 
 def test_reviewer_rejects_oversized_artifact_without_calling_provider() -> None:

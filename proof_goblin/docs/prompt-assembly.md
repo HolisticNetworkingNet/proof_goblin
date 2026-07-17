@@ -75,9 +75,11 @@ prompt = builder.build(
     review=review_name,
     artifact=artifact,
     artifact_name=artifact_path.name,
-    artifact_media_type="text/html",
 )
 ```
+
+The omitted media type is deterministically inferred as `text/html` from the
+artifact name. An explicit supported value would take precedence.
 
 `build()` returns a `Prompt` with:
 
@@ -91,8 +93,10 @@ prompt = builder.build(
 
 The `system` and `user` values remain separate so a provider can preserve their
 message roles. Artifact content is confined to the user prompt and explicitly
-marked as untrusted review material. Empty artifact text, artifact names, or
-media types raise `PromptBuildError`.
+marked as untrusted review material. Empty artifact text or names raise
+`PromptBuildError`. Invalid or unsupported media types raise
+`ArtifactMediaTypeError`; see {doc}`artifact-media-types` for inference,
+normalization, and the supported textual boundary.
 Input that exceeds the builder's `InputLimits` raises `InputLimitError` without
 including input text in the diagnostic. See {doc}`input-limits` for the default
 ceilings and host configuration interface.
@@ -125,7 +129,7 @@ the rendering and escaping contract.
 ## Determinism and provenance
 
 Given the same validated configuration content, review identifier, exact
-artifact string, artifact name, and media type, `PromptBuilder` produces the
+artifact string, artifact name, and resolved media type, `PromptBuilder` produces the
 same `system` and `user` strings and the same provenance values. No whitespace,
 line-ending, or Unicode normalization is performed.
 

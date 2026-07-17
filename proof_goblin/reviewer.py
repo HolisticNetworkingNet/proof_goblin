@@ -60,7 +60,7 @@ class Reviewer:
         review: str,
         artifact: str,
         artifact_name: str = "artifact",
-        artifact_media_type: str = "text/plain",
+        artifact_media_type: str | None = None,
     ) -> ProviderPreflight:
         """Prepare and validate a review without generating provider output."""
 
@@ -79,7 +79,7 @@ class Reviewer:
         review: str,
         artifact: str,
         artifact_name: str = "artifact",
-        artifact_media_type: str = "text/plain",
+        artifact_media_type: str | None = None,
     ) -> PreparedReview:
         """Build and validate one canonical provider request."""
 
@@ -110,7 +110,7 @@ class Reviewer:
         review: str,
         artifact: str,
         artifact_name: str = "artifact",
-        artifact_media_type: str = "text/plain",
+        artifact_media_type: str | None = None,
     ) -> ReviewResult:
         """Run a named review against an artifact."""
 
@@ -163,7 +163,7 @@ class Reviewer:
         review: str,
         artifact: str,
         artifact_name: str,
-        artifact_media_type: str,
+        artifact_media_type: str | None,
     ) -> tuple[ResolvedReview, Prompt]:
         builder = PromptBuilder(config, limits=self.limits)
         resolved = builder.resolve(review)

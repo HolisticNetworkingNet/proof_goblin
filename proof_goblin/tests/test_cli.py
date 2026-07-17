@@ -157,7 +157,153 @@ def test_prompt_command_prints_versioned_json(
     assert captured.err == ""
     assert payload["format"] == "proof-goblin-prompt"
     assert payload["review"]["name"] == "homepage_first_pass"
+    assert payload["artifact"]["media_type"] == "text/html"
     assert payload["prompt"]["user"].endswith("--- END UNTRUSTED ARTIFACT ---")
+
+
+def test_prompt_normalizes_explicit_media_type(
+    artifact_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = cli.main(
+        [
+            "prompt",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--media-type",
+            " APPLICATION/X-YAML ",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Artifact media type: application/yaml" in captured.out
+    assert captured.err == ""
+
+
+def test_prompt_unknown_extension_requires_explicit_media_type(
+    artifact_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = cli.main(
+        [
+            "prompt",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--artifact-name",
+            "draft.unknown",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert captured.out == ""
+    assert "unrecognized artifact file extension '.unknown'" in captured.err
+    assert "provide an explicit artifact media type" in captured.err
+
+
+def test_prompt_explicit_media_type_allows_unknown_extension(
+    artifact_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = cli.main(
+        [
+            "prompt",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--artifact-name",
+            "localhost-key.pem",
+            "--media-type",
+            "text/plain",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Artifact media type: text/plain" in captured.out
+    assert captured.err == ""
+
+
+def test_review_rejects_invalid_media_type_before_provider_or_cache(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    provider_constructed = False
+
+    class NeverProvider:
+        def __init__(self, *, model: str) -> None:
+            nonlocal provider_constructed
+            provider_constructed = True
+
+    monkeypatch.setattr(cli, "OpenAIProvider", NeverProvider)
+
+    exit_code = cli.main(
+        [
+            "review",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+            "--media-type",
+            "application/octet-stream",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "decoded textual artifacts only" in captured.err
+    assert provider_constructed is False
+    assert not (tmp_path / "cache").exists()
+
+
+def test_review_rejects_unknown_file_extension_before_provider_or_cache(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    artifact_path = tmp_path / "localhost-key.pem"
+    artifact_path.write_text(
+        "-----BEGIN PRIVATE KEY-----\nexample\n-----END PRIVATE KEY-----",
+        encoding="utf-8",
+    )
+    provider_constructed = False
+
+    class NeverProvider:
+        def __init__(self, *, model: str) -> None:
+            nonlocal provider_constructed
+            provider_constructed = True
+
+    monkeypatch.setattr(cli, "OpenAIProvider", NeverProvider)
+
+    exit_code = cli.main(
+        [
+            "review",
+            str(artifact_path),
+            "--config",
+            str(EXAMPLE_CONFIG),
+            "--review",
+            "homepage_first_pass",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "unrecognized artifact file extension '.pem'" in captured.err
+    assert "BEGIN PRIVATE KEY" not in captured.err
+    assert provider_constructed is False
+    assert not (tmp_path / "cache").exists()
 
 
 def test_prompt_writes_multiple_formats_without_provider_execution(
@@ -447,6 +593,26 @@ def test_review_reuses_cached_result_for_later_format(
     assert FakeProvider.calls == 1
     assert "resp_cli_test" in markdown_path.read_text(encoding="utf-8")
     assert "resp_cli_test" in html_path.read_text(encoding="utf-8")
+
+
+def test_normalized_media_type_reuses_same_provider_request_cache(
+    artifact_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli, "OpenAIProvider", FakeProvider)
+    arguments = [
+        "review",
+        str(artifact_path),
+        "--config",
+        str(EXAMPLE_CONFIG),
+        "--review",
+        "homepage_first_pass",
+    ]
+
+    assert cli.main(arguments) == 0
+    assert cli.main([*arguments, "--media-type", " TEXT/HTML "]) == 0
+
+    assert FakeProvider.calls == 1
 
 
 def test_review_caches_resolved_provider_model_under_requested_model(

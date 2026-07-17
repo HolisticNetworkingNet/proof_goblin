@@ -38,10 +38,12 @@ Named Review + Artifact
 ## Artifact
 
 The **Artifact** is the material being reviewed. The current Python API accepts
-the artifact as a non-empty string, together with a descriptive name and media
-type. It can contain Markdown, HTML, plain text, or a textual representation
-extracted from another format. Proof Goblin does not currently accept a PDF,
-image, or other binary object directly.
+the artifact as a non-empty string, together with a descriptive name and a
+canonical supported textual media type. When the media type is omitted, the CLI
+and Python API infer it through the same fixed filename-extension map and use
+`text/plain` as a fallback. Proof Goblin does not accept a PDF, image, or other
+binary object directly. See {doc}`artifact-media-types` for the complete
+boundary.
 
 The artifact becomes part of the Assembled Prompt sent to the Provider. Its
 UTF-8 bytes are also hashed so a ReviewResult can identify the reviewed content

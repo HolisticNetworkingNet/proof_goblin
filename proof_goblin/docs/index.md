@@ -25,6 +25,7 @@ artifact-media-types
 input-limits
 openai-provider
 data-handling
+filesystem-boundaries
 report-formats
 host-integration
 development

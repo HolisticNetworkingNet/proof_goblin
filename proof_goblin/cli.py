@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import stat
 import sys
 import tempfile
 from collections.abc import Sequence
@@ -16,6 +17,7 @@ from proof_goblin.artifacts import (
 from proof_goblin.builder import PromptBuilder, PromptBuildError
 from proof_goblin.cache import ReviewCache, ReviewCacheError
 from proof_goblin.config import Config, ConfigError
+from proof_goblin.filesystem import read_limited_regular_file
 from proof_goblin.limits import (
     DEFAULT_INPUT_LIMITS,
     InputLimitError,
@@ -321,11 +323,11 @@ def _read_artifact(
 
     path = Path(path_value)
     try:
-        size = path.stat().st_size
-        limits.enforce_artifact(size)
-        with path.open("rb") as stream:
-            content = stream.read(limits.max_artifact_bytes + 1)
-        limits.enforce_artifact(len(content))
+        content, _ = read_limited_regular_file(
+            path,
+            max_bytes=limits.max_artifact_bytes,
+            enforce_limit=limits.enforce_artifact,
+        )
         return content.decode("utf-8"), path.name
     except (OSError, UnicodeError) as exc:
         raise CliError(f"could not read artifact {path}: {exc}") from exc
@@ -448,8 +450,12 @@ def _write_output(path: Path, content: str, *, noun: str) -> None:
             os.fsync(temporary.fileno())
 
         assert temporary_path is not None
-        if path.exists():
-            temporary_path.chmod(path.stat().st_mode & 0o777)
+        try:
+            destination = path.lstat()
+        except FileNotFoundError:
+            destination = None
+        if destination is not None and stat.S_ISREG(destination.st_mode):
+            temporary_path.chmod(stat.S_IMODE(destination.st_mode))
         os.replace(temporary_path, path)
     except (OSError, UnicodeError) as exc:
         if temporary_path is not None:

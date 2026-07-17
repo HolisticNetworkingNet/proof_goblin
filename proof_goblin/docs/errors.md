@@ -234,12 +234,15 @@ reserved, or written. Common conditions and recovery are:
 | Cached provenance or JSON is invalid. | `cached review ... is invalid; rerun with --refresh: ...` | Inspect the path if appropriate, then deliberately refresh the result. |
 | Another identical request owns the reservation. | `an identical review request is already in progress` | Wait for the active operation to complete before retrying. |
 | The cache directory is accessible to other local users on POSIX. | `review cache ... must have user-only permissions` | Restrict the existing directory to its owner. |
+| A POSIX cache path is owned by another user. | `review cache ... must be owned by the current user` | Select a cache owned by the process user or correct its ownership outside Proof Goblin. |
+| A cache directory or result is a symbolic link, or an entry is not a regular file. | `review cache ... must not be a symbolic link` or `must be a regular file` | Select or restore an ordinary private cache directory and entry. |
 | A cache path cannot be prepared, read, reserved, inspected, or written. | `could not <operation> review cache ...` | Correct the path, permissions, storage, or stale reservation condition. |
 | Request, response, or cache-key identities disagree. | `<identity> does not match <expected identity>` | Treat this as an integration or state error; do not retry unchanged. |
 
 Cache diagnostics can contain cache paths and validation details. Cached result
 files omit prompt text and artifact bodies by default, but observations and
-evidence can reproduce sensitive artifact content.
+evidence can reproduce sensitive artifact content. See
+{doc}`filesystem-boundaries` for the complete cache path contract.
 
 ## Reports and stored results
 

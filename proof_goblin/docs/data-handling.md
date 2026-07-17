@@ -110,6 +110,9 @@ tenant model, retention schedule, archival workflow, or deletion command.
 creates new cache directories and files with user-only permissions and rejects
 an existing cache directory that is accessible to other users. That operating-
 system user boundary is not a substitute for application authorization.
+The cache's POSIX ownership, mode, regular-file, and symbolic-link checks—and
+the corresponding Windows limitation—are defined in
+{doc}`filesystem-boundaries`.
 
 An abandoned cache reservation becomes stale after fifteen minutes; that rule
 applies only to in-progress lock files. It is not an expiration policy for

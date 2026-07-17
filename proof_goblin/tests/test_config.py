@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 from types import MappingProxyType
 
@@ -52,6 +53,20 @@ def test_loads_example_bundle_with_provenance() -> None:
     assert config.review("homepage_first_pass").title == "Restaurant Homepage Review"
     assert config.review("homepage_first_pass").description.startswith("Evaluates")
     assert config.metadata["description"].startswith("Reusable review definitions")
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires privileges")
+def test_load_follows_one_resolved_configuration_symlink(tmp_path: Path) -> None:
+    target = tmp_path / "target.pgcfg"
+    selected = tmp_path / "selected.pgcfg"
+    target.write_text(json.dumps(valid_config()), encoding="utf-8")
+    selected.symlink_to(target)
+
+    config = Config.load(selected)
+
+    assert config.name == "test"
+    assert config.source_path == target.resolve()
+    assert config.sha256 == hashlib.sha256(target.read_bytes()).hexdigest()
 
 
 def test_rejects_non_pgcfg_extension(tmp_path: Path) -> None:

@@ -6,7 +6,12 @@ from pathlib import Path
 from proof_goblin import cli
 from proof_goblin.cache import CACHE_DIRECTORY_ENV
 from proof_goblin.limits import DEFAULT_INPUT_LIMITS
-from proof_goblin.providers import DEFAULT_MAX_OUTPUT_TOKENS, DEFAULT_OPENAI_MODEL
+from proof_goblin.providers import (
+    DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_OPENAI_MAX_RETRIES,
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_OPENAI_TIMEOUT_SECONDS,
+)
 
 CONFIGURATION_DOC = Path(__file__).resolve().parents[1] / "docs" / "configuration.md"
 
@@ -40,6 +45,8 @@ def test_configuration_reference_tracks_environment_and_provider_defaults() -> N
     assert "`OPENAI_MODEL`" in documentation
     assert f"`{DEFAULT_OPENAI_MODEL}`" in documentation
     assert f"{DEFAULT_MAX_OUTPUT_TOKENS:,}" in documentation
+    assert f"{DEFAULT_OPENAI_TIMEOUT_SECONDS:g}-second" in documentation
+    assert f"{DEFAULT_OPENAI_MAX_RETRIES}" in documentation
 
 
 def test_configuration_reference_tracks_input_limit_fields_and_defaults() -> None:

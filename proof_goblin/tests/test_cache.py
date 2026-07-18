@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -411,6 +412,43 @@ def test_reservation_replaces_a_stale_lock(tmp_path: Path) -> None:
         assert lock_path.exists()
 
     assert not lock_path.exists()
+
+
+def test_active_reservation_heartbeat_prevents_stale_replacement(
+    tmp_path: Path,
+) -> None:
+    cache = ReviewCache(
+        tmp_path,
+        stale_lock_age=timedelta(milliseconds=120),
+        lock_heartbeat_interval=timedelta(milliseconds=20),
+    )
+
+    with cache.reserve("same-key"):
+        time.sleep(0.16)
+        with pytest.raises(ReviewCacheError, match="already in progress"):
+            with cache.reserve("same-key"):
+                pass
+
+
+@pytest.mark.parametrize(
+    ("stale_age", "heartbeat"),
+    [
+        (timedelta(0), timedelta(seconds=1)),
+        (timedelta(seconds=10), timedelta(0)),
+        (timedelta(seconds=10), timedelta(seconds=10)),
+    ],
+)
+def test_cache_rejects_unbounded_reservation_timing(
+    tmp_path: Path,
+    stale_age: timedelta,
+    heartbeat: timedelta,
+) -> None:
+    with pytest.raises(ValueError):
+        ReviewCache(
+            tmp_path,
+            stale_lock_age=stale_age,
+            lock_heartbeat_interval=heartbeat,
+        )
 
 
 @pytest.mark.skipif(os.name == "nt", reason="symlink creation requires privileges")

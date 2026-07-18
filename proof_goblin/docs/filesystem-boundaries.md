@@ -88,8 +88,10 @@ protect against another process running as the same operating-system user.
 Completed cache records are prepared in the cache directory, synchronized,
 assigned private permissions, and atomically replaced. Reservations use
 exclusive file creation so two ordinary processes cannot acquire the same lock
-simultaneously. The fifteen-minute stale-lock rule is recovery behavior, not a
-general guarantee against every concurrent process or filesystem failure.
+simultaneously. An active reservation refreshes its lock every minute; an
+abandoned lock is stale fifteen minutes after its last heartbeat. This recovery
+lease is not a general guarantee against every concurrent process or filesystem
+failure. See {doc}`execution-contract` for duplicate-cost implications.
 
 Windows does not expose its effective file ACL policy through POSIX mode bits.
 Proof Goblin uses the platform's per-user cache location, rejects the file types

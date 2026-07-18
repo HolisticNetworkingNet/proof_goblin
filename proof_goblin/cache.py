@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import secrets
 import stat
 import sys
 import tempfile
@@ -14,6 +15,7 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from os import replace as replace_file
 from pathlib import Path
+from threading import Event, Thread
 from typing import Any
 
 from proof_goblin.builder import Prompt
@@ -23,6 +25,7 @@ from proof_goblin.providers.base import ProviderRequest
 CACHE_KEY_VERSION = "3"
 CACHE_DIRECTORY_ENV = "PROOF_GOBLIN_CACHE_DIR"
 STALE_LOCK_AGE = timedelta(minutes=15)
+LOCK_HEARTBEAT_INTERVAL = timedelta(minutes=1)
 
 
 class ReviewCacheError(RuntimeError):
@@ -32,8 +35,22 @@ class ReviewCacheError(RuntimeError):
 class ReviewCache:
     """Store canonical results as private, atomically replaced JSON files."""
 
-    def __init__(self, directory: Path | None = None) -> None:
+    def __init__(
+        self,
+        directory: Path | None = None,
+        *,
+        stale_lock_age: timedelta = STALE_LOCK_AGE,
+        lock_heartbeat_interval: timedelta = LOCK_HEARTBEAT_INTERVAL,
+    ) -> None:
         self.directory = directory or default_cache_directory()
+        if stale_lock_age <= timedelta(0):
+            raise ValueError("stale_lock_age must be positive")
+        if not timedelta(0) < lock_heartbeat_interval < stale_lock_age:
+            raise ValueError(
+                "lock_heartbeat_interval must be positive and less than stale_lock_age"
+            )
+        self.stale_lock_age = stale_lock_age
+        self.lock_heartbeat_interval = lock_heartbeat_interval
 
     def key_for(self, request: ProviderRequest) -> str:
         """Return the stable identity of a provider request."""
@@ -216,6 +233,7 @@ class ReviewCache:
 
         self._prepare_directory()
         path = self.directory / f"{key}.lock"
+        token = secrets.token_hex(16)
         try:
             descriptor = self._create_lock(path)
         except FileExistsError:
@@ -232,13 +250,28 @@ class ReviewCache:
 
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as lock_file:
-                lock_file.write(f"pid={os.getpid()}\n")
+                lock_file.write(f"pid={os.getpid()} token={token}\n")
+                lock_file.flush()
+                os.fsync(lock_file.fileno())
+            stop_heartbeat = Event()
+            heartbeat_errors: list[ReviewCacheError] = []
+            heartbeat = Thread(
+                target=self._heartbeat_lock,
+                args=(path, token, stop_heartbeat, heartbeat_errors),
+                name="proof-goblin-cache-heartbeat",
+                daemon=True,
+            )
+            heartbeat.start()
+            completed = False
             yield
+            completed = True
         finally:
-            try:
-                path.unlink(missing_ok=True)
-            except OSError:
-                pass
+            if "stop_heartbeat" in locals():
+                stop_heartbeat.set()
+                heartbeat.join()
+            self._release_lock(path, token)
+        if completed and heartbeat_errors:
+            raise heartbeat_errors[0]
 
     def _prepare_directory(self) -> None:
         try:
@@ -313,8 +346,7 @@ class ReviewCache:
                 f"could not reserve review cache {path}: {exc}"
             ) from exc
 
-    @staticmethod
-    def _remove_stale_lock(path: Path) -> bool:
+    def _remove_stale_lock(self, path: Path) -> bool:
         try:
             lock = path.lstat()
             if stat.S_ISLNK(lock.st_mode) or not stat.S_ISREG(lock.st_mode):
@@ -327,7 +359,7 @@ class ReviewCache:
                 "review cache reservation",
             )
             modified_at = datetime.fromtimestamp(lock.st_mtime, UTC)
-            if datetime.now(UTC) - modified_at < STALE_LOCK_AGE:
+            if datetime.now(UTC) - modified_at < self.stale_lock_age:
                 return False
             path.unlink()
             return True
@@ -337,6 +369,49 @@ class ReviewCache:
             raise ReviewCacheError(
                 f"could not inspect review cache reservation {path}: {exc}"
             ) from exc
+
+    def _heartbeat_lock(
+        self,
+        path: Path,
+        token: str,
+        stop: Event,
+        errors: list[ReviewCacheError],
+    ) -> None:
+        interval = self.lock_heartbeat_interval.total_seconds()
+        while not stop.wait(interval):
+            try:
+                if not self._lock_matches(path, token):
+                    raise ReviewCacheError(
+                        f"review cache reservation {path} changed while active"
+                    )
+                os.utime(path, None)
+            except (OSError, ReviewCacheError) as exc:
+                if isinstance(exc, ReviewCacheError):
+                    errors.append(exc)
+                else:
+                    errors.append(
+                        ReviewCacheError(
+                            f"could not refresh review cache reservation {path}: {exc}"
+                        )
+                    )
+                return
+
+    def _release_lock(self, path: Path, token: str) -> None:
+        try:
+            if self._lock_matches(path, token):
+                path.unlink()
+        except (OSError, ReviewCacheError):
+            pass
+
+    @staticmethod
+    def _lock_matches(path: Path, token: str) -> bool:
+        lock = path.lstat()
+        if stat.S_ISLNK(lock.st_mode) or not stat.S_ISREG(lock.st_mode):
+            raise ReviewCacheError(
+                f"review cache reservation {path} must be a regular file"
+            )
+        _require_private_posix_entry(lock, path, "review cache reservation")
+        return f"token={token}" in path.read_text(encoding="utf-8")
 
 
 def _require_private_posix_entry(

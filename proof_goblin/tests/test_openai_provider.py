@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from proof_goblin import (
+    DEFAULT_INPUT_LIMITS,
     Config,
+    InputLimitError,
     OpenAIProvider,
     PromptBuilder,
     ProviderCapacityStatus,
@@ -168,6 +171,15 @@ def test_openai_provider_rejects_non_json_output() -> None:
 
     with pytest.raises(ProviderResponseError, match="was not valid JSON"):
         OpenAIProvider(client=client).generate(prompt, schema)
+
+
+def test_openai_provider_bounds_text_before_json_decoding() -> None:
+    client = make_client(SimpleNamespace(output=[], output_text="x" * 41))
+    prompt, schema = make_prompt_and_schema()
+    limits = replace(DEFAULT_INPUT_LIMITS, max_provider_response_bytes=40)
+
+    with pytest.raises(InputLimitError, match="decoded provider response"):
+        OpenAIProvider(client=client, limits=limits).generate(prompt, schema)
 
 
 def test_openai_provider_reports_insufficient_quota() -> None:

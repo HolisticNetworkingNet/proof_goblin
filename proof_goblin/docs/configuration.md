@@ -338,17 +338,17 @@ Proof Goblin settings registry.
 | API | Control | Default and contract |
 | --- | --- | --- |
 | `Config.load(path, limits=...)` | Bundle path and file-size policy | `DEFAULT_INPUT_LIMITS`; requires a `.pgcfg` UTF-8 JSON file. |
-| `Config.from_mapping(data)` | Already-decoded bundle | No original byte-size check is possible. Structural validation still applies. |
+| `Config.from_mapping(data, limits=...)` | Already-decoded bundle | Measures compact canonical JSON before validation and freezing; the original encoded size is unknowable. |
 | `PromptBuilder(config, limits=...)` | Prompt-assembly policy | `DEFAULT_INPUT_LIMITS`; enforces artifact, system-prompt, and total-prompt byte ceilings. |
 | `PromptBuilder.build(...)` | Review, artifact, artifact name, and media type | `artifact_name="artifact"`; media type is inferred unless explicit. |
-| `Reviewer(provider, limits=...)` | Execution-time prompt policy | `DEFAULT_INPUT_LIMITS`; the reviewer builds and preflights using this policy. |
+| `Reviewer(provider, limits=...)` | Execution-time prompt and decoded-response policy | `DEFAULT_INPUT_LIMITS`; the reviewer builds, preflights, bounds, and validates using this policy. |
 | `Reviewer.preflight(...)` and `Reviewer.review(...)` | Same review inputs as the builder | Prepare the same credential-free provider request; `review()` additionally executes it. |
-| `OpenAIProvider(model=..., max_output_tokens=..., client=...)` | Model, reserved output allowance, and SDK client | Model `gpt-5.6`; 8,192 positive output tokens; lazily created default SDK client. |
+| `OpenAIProvider(model=..., max_output_tokens=..., limits=..., client=...)` | Model, reserved output allowance, response policy, and SDK client | Model `gpt-5.6`; 8,192 positive output tokens; `DEFAULT_INPUT_LIMITS`; lazily created default SDK client. |
 | `ReviewCache(directory=...)` | Cache storage location | `PROOF_GOBLIN_CACHE_DIR`, then the platform default. This lower-level class is available from `proof_goblin.cache`. |
 | `render_prompt(prompt, prompt_format=...)` | Prompt presentation | `text`; every successful format includes the complete prompt and artifact. |
-| `render_report(result, report_format=..., include_prompt=...)` | Report presentation and optional prompt retention | `text` and no prompt; prompt inclusion is JSON-only. |
+| `render_report(result, report_format=..., include_prompt=..., limits=...)` | Report presentation, optional prompt retention, and output ceiling | `text`, no prompt, and `DEFAULT_INPUT_LIMITS`; prompt inclusion is JSON-only. |
 
-`InputLimits` contains five positive-integer UTF-8 byte ceilings:
+`InputLimits` contains positive-integer byte and nesting ceilings:
 
 | Field | Default |
 | --- | ---: |
@@ -357,6 +357,9 @@ Proof Goblin settings registry.
 | `max_total_artifact_bytes` | 262,144 (256 KiB) |
 | `max_system_prompt_bytes` | 131,072 (128 KiB) |
 | `max_prompt_bytes` | 524,288 (512 KiB) |
+| `max_provider_response_bytes` | 1,048,576 (1 MiB) |
+| `max_rendered_output_bytes` | 8,388,608 (8 MiB) |
+| `max_json_depth` | 64 levels |
 
 Pass the same `InputLimits` value to every boundary used by the host. The CLI
 does this for configuration loading and review assembly. Independent Python
@@ -383,7 +386,7 @@ stage.
 | Review identifier, title, and description | Validated | Identifier carried as provenance; referenced content is resolved | Indirect through selected content | Indirect; labels alone do not change the request key | Recorded | Displayed |
 | Artifact text | Read and bounded by the CLI | Included as untrusted user content | Included | Included | SHA-256 only by default | Can be retained with an explicit prompt-inclusive format |
 | Artifact name and media type | Resolved and validated | Included in user content | Included | Included | Recorded | Displayed |
-| `InputLimits` | Configuration and CLI artifact bytes | Enforced | Values are not sent | Values are not keyed directly | Not recorded | No direct effect |
+| `InputLimits` | Configuration and CLI artifact bytes | Enforced before and after the provider call | Values are not keyed directly | Values are not keyed directly | Not recorded | Enforces complete rendered bytes |
 | Model | No effect | No effect | Included | Included | Resolved response model recorded | Displayed |
 | Maximum output tokens | No effect | No effect | Included | Included | Not recorded as a standalone field | No direct effect |
 | Credentials and SDK transport | No effect | No effect | Applied by the SDK at execution | Excluded | Not recorded | No direct effect |

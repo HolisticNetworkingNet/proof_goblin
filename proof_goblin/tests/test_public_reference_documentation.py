@@ -54,6 +54,7 @@ def test_report_reference_tracks_public_rendering_contracts() -> None:
         "result",
         "report_format",
         "include_prompt",
+        "limits",
     )
     assert tuple(inspect.signature(render_prompt).parameters) == (
         "prompt",
@@ -63,6 +64,7 @@ def test_report_reference_tracks_public_rendering_contracts() -> None:
         "self",
         "result",
         "include_prompt",
+        "limits",
     )
     for renderer in (
         TextReportRenderer,

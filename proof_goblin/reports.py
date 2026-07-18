@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
+from proof_goblin.limits import DEFAULT_INPUT_LIMITS, InputLimits
 from proof_goblin.observations import (
     REVIEW_RESULT_FORMAT,
     REVIEW_RESULT_SCHEMA_VERSION,
@@ -36,6 +37,7 @@ class ReportRenderer(Protocol):
         result: ReviewResult,
         *,
         include_prompt: bool = False,
+        limits: InputLimits = DEFAULT_INPUT_LIMITS,
     ) -> str:
         """Return the complete rendered report."""
 
@@ -56,6 +58,7 @@ class TextReportRenderer:
         result: ReviewResult,
         *,
         include_prompt: bool = False,
+        limits: InputLimits = DEFAULT_INPUT_LIMITS,
     ) -> str:
         _reject_prompt_in_presentation(include_prompt, ReportFormat.TEXT)
         lines = [
@@ -77,7 +80,7 @@ class TextReportRenderer:
                     f"   Evidence: {observation.evidence}",
                 ]
             )
-        return "\n".join(lines) + "\n"
+        return _bounded("\n".join(lines) + "\n", limits)
 
 
 class JsonReportRenderer:
@@ -88,8 +91,12 @@ class JsonReportRenderer:
         result: ReviewResult,
         *,
         include_prompt: bool = False,
+        limits: InputLimits = DEFAULT_INPUT_LIMITS,
     ) -> str:
-        return result.to_json(include_prompt=include_prompt) + "\n"
+        return _bounded(
+            result.to_json(include_prompt=include_prompt, limits=limits) + "\n",
+            limits,
+        )
 
 
 class MarkdownReportRenderer:
@@ -100,6 +107,7 @@ class MarkdownReportRenderer:
         result: ReviewResult,
         *,
         include_prompt: bool = False,
+        limits: InputLimits = DEFAULT_INPUT_LIMITS,
     ) -> str:
         _reject_prompt_in_presentation(include_prompt, ReportFormat.MARKDOWN)
         lines = [
@@ -132,7 +140,7 @@ class MarkdownReportRenderer:
                     _markdown_quote(observation.evidence),
                 ]
             )
-        return "\n".join(lines) + "\n"
+        return _bounded("\n".join(lines) + "\n", limits)
 
 
 class HtmlReportRenderer:
@@ -143,6 +151,7 @@ class HtmlReportRenderer:
         result: ReviewResult,
         *,
         include_prompt: bool = False,
+        limits: InputLimits = DEFAULT_INPUT_LIMITS,
     ) -> str:
         _reject_prompt_in_presentation(include_prompt, ReportFormat.HTML)
         title = _html(result.review.title)
@@ -153,7 +162,8 @@ class HtmlReportRenderer:
         if not observations:
             observations = '      <p class="empty">No observations were reported.</p>'
         detail_table = _render_html_detail_table(_report_detail_rows(result))
-        return f"""<!doctype html>
+        return _bounded(
+            f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -200,7 +210,9 @@ class HtmlReportRenderer:
   </main>
 </body>
 </html>
-"""
+""",
+            limits,
+        )
 
 
 _REPORT_RENDERERS: Mapping[ReportFormat, ReportRenderer] = {
@@ -216,6 +228,7 @@ def render_report(
     report_format: ReportFormat | str = ReportFormat.TEXT,
     *,
     include_prompt: bool = False,
+    limits: InputLimits = DEFAULT_INPUT_LIMITS,
 ) -> str:
     """Render a review result in a supported format.
 
@@ -235,7 +248,13 @@ def render_report(
     return _REPORT_RENDERERS[selected_format].render(
         result,
         include_prompt=include_prompt,
+        limits=limits,
     )
+
+
+def _bounded(rendered: str, limits: InputLimits) -> str:
+    limits.enforce_rendered_output(len(rendered.encode("utf-8")))
+    return rendered
 
 
 def _reject_prompt_in_presentation(

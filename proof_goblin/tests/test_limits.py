@@ -15,8 +15,25 @@ from proof_goblin import (
     PromptMeasurements,
     cli,
 )
+from proof_goblin.limits import measure_json_utf8_bytes
 
 EXAMPLE_CONFIG = Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
+
+
+def test_json_measurement_counts_compact_utf8_and_rejects_depth() -> None:
+    assert measure_json_utf8_bytes(
+        {"é": [True, None]},
+        limits=DEFAULT_INPUT_LIMITS,
+        boundary="decoded value",
+    ) == len('{"é":[true,null]}'.encode())
+
+    limits = replace(DEFAULT_INPUT_LIMITS, max_json_depth=2)
+    with pytest.raises(InputLimitError, match="3 levels"):
+        measure_json_utf8_bytes(
+            {"outer": [{"inner": True}]},
+            limits=limits,
+            boundary="decoded value",
+        )
 
 
 def test_prompt_measurements_count_multibyte_utf8() -> None:

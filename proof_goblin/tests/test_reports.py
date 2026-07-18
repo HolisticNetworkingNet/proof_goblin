@@ -8,7 +8,9 @@ from pathlib import Path
 import pytest
 
 from proof_goblin import (
+    DEFAULT_INPUT_LIMITS,
     Config,
+    InputLimitError,
     Observation,
     PromptBuilder,
     ReportFormat,
@@ -107,6 +109,13 @@ def test_json_report_is_the_canonical_result_record() -> None:
 
     assert json.loads(rendered) == result.to_dict()
     assert "prompt" not in json.loads(rendered)
+
+
+def test_report_rejects_complete_rendered_output_over_limit() -> None:
+    limits = replace(DEFAULT_INPUT_LIMITS, max_rendered_output_bytes=20)
+
+    with pytest.raises(InputLimitError, match="rendered output"):
+        render_report(make_result(), limits=limits)
 
 
 def test_json_report_can_explicitly_include_prompt() -> None:

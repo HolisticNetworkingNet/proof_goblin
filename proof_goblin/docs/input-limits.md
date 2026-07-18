@@ -18,6 +18,9 @@ byte ceilings:
 | All artifacts in one review | 262,144 bytes (256 KiB) |
 | Assembled system prompt | 131,072 bytes (128 KiB) |
 | Complete assembled prompt | 524,288 bytes (512 KiB) |
+| Decoded provider response | 1,048,576 bytes (1 MiB) |
+| Complete rendered output | 8,388,608 bytes (8 MiB) |
+| JSON-compatible mapping nesting | 64 levels |
 
 The per-artifact and aggregate limits are equal while a review accepts one
 artifact. Keeping both fields in the policy allows a future multi-document
@@ -66,9 +69,34 @@ reviewer = Reviewer(OpenAIProvider(), limits=limits)
 ```
 
 Pass the same policy at each boundary the host uses. `Config.from_mapping()`
-receives an already-decoded object and therefore has no original file size to
-enforce; selected configuration content remains subject to the system and
-total prompt limits during assembly.
+cannot recover the original encoded size, so it measures the compact canonical
+JSON representation before structural validation and immutable copies.
+
+## Post-request and in-memory boundaries
+
+The OpenAI adapter measures response text before JSON decoding. `Reviewer`
+then measures every provider's decoded JSON-compatible mapping before JSON
+Schema validation and observation copies. The 1 MiB default is deliberately
+far above the ordinary output of an 8,192-token structured review while still
+bounding an SDK response or custom provider that ignores that token request.
+
+Canonical JSON measurement is incremental across the object rather than one
+complete temporary serialization. Empty containers still consume delimiters,
+and strings include their JSON escaping. The 64-level ceiling prevents deeply
+nested accepted mappings from reaching recursive validation and freezing.
+
+Canonical result JSON and all built-in reports are measured as complete UTF-8
+documents. The 8 MiB ceiling leaves room for prompt-inclusive JSON and worst-
+case HTML or Markdown escaping of accepted response text. Rendering necessarily
+constructs its returned Python string before its exact encoded size can be
+checked; hosts requiring streaming or a lower transient-memory peak must supply
+their own renderer.
+
+These limits do not bound the provider SDK's complete response object, Python
+object overhead in an already-decoded mapping, arbitrary behavior of trusted
+custom mapping objects, allocator overhead, or downstream copies made by a
+host. Output tokens remain the primary provider-cost boundary; byte limits are
+independent local stability boundaries and do not promise constant memory use.
 
 The command-line interface uses `DEFAULT_INPUT_LIMITS`. It reads artifact files
 and standard input through bounded readers, so an oversized CLI artifact is

@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from proof_goblin.builder import Prompt
+from proof_goblin.limits import DEFAULT_INPUT_LIMITS, InputLimits
 
 REVIEW_RESULT_FORMAT = "proof-goblin-review-result"
 REVIEW_RESULT_SCHEMA_VERSION = "1.0"
@@ -128,15 +129,18 @@ class ReviewResult:
         *,
         include_prompt: bool = False,
         indent: int | None = 2,
+        limits: InputLimits = DEFAULT_INPUT_LIMITS,
     ) -> str:
         """Serialize the versioned result record as JSON."""
 
-        return json.dumps(
+        rendered = json.dumps(
             self.to_dict(include_prompt=include_prompt),
             ensure_ascii=False,
             indent=indent,
             sort_keys=True,
         )
+        limits.enforce_rendered_output(len(rendered.encode("utf-8")))
+        return rendered
 
     @classmethod
     def from_dict(

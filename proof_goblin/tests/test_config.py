@@ -3,17 +3,29 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from dataclasses import replace
 from pathlib import Path
 from types import MappingProxyType
 
 import pytest
 
 from proof_goblin import (
+    DEFAULT_INPUT_LIMITS,
     ComponentNotFoundError,
     Config,
     ConfigParseError,
     ConfigValidationError,
+    InputLimitError,
 )
+
+
+def test_from_mapping_bounds_canonical_json_before_validation() -> None:
+    data = valid_config()
+    limits = replace(DEFAULT_INPUT_LIMITS, max_config_bytes=20)
+
+    with pytest.raises(InputLimitError, match="configuration input"):
+        Config.from_mapping(data, limits=limits)
+
 
 EXAMPLE_CONFIG = Path(__file__).parents[1] / "examples" / "restaurants.pgcfg"
 

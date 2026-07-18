@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from proof_goblin.builder import Prompt
+from proof_goblin.limits import DEFAULT_INPUT_LIMITS, InputLimits
 from proof_goblin.observations import TokenUsage
 from proof_goblin.providers.base import (
     ProviderPreflight,
@@ -32,6 +33,7 @@ class OpenAIProvider:
         *,
         model: str = DEFAULT_OPENAI_MODEL,
         max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
+        limits: InputLimits = DEFAULT_INPUT_LIMITS,
         client: Any | None = None,
     ) -> None:
         if not isinstance(model, str) or not model.strip():
@@ -44,6 +46,7 @@ class OpenAIProvider:
             raise ProviderRequestError("max_output_tokens must be a positive integer")
         self.model = model
         self.max_output_tokens = max_output_tokens
+        self.limits = limits
         self._client = client
 
     @property
@@ -89,6 +92,7 @@ class OpenAIProvider:
         output_text = getattr(response, "output_text", None)
         if not isinstance(output_text, str) or not output_text.strip():
             raise ProviderResponseError("OpenAI response did not contain output text")
+        self.limits.enforce_provider_response(len(output_text.encode("utf-8")))
 
         try:
             data = json.loads(output_text)

@@ -10,7 +10,9 @@ import pytest
 from jsonschema import Draft202012Validator, FormatChecker
 
 from proof_goblin import (
+    DEFAULT_INPUT_LIMITS,
     Config,
+    InputLimitError,
     Observation,
     PromptBuilder,
     ReviewAttribution,
@@ -120,6 +122,13 @@ def test_to_json_round_trips_to_the_same_record() -> None:
     result = make_result()
 
     assert json.loads(result.to_json()) == result.to_dict()
+
+
+def test_to_json_rejects_complete_serialization_over_limit() -> None:
+    limits = replace(DEFAULT_INPUT_LIMITS, max_rendered_output_bytes=20)
+
+    with pytest.raises(InputLimitError, match="rendered output"):
+        make_result().to_json(limits=limits)
 
 
 def test_from_dict_reconstructs_result_with_verified_prompt() -> None:

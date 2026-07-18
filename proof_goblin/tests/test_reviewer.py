@@ -177,6 +177,18 @@ def test_reviewer_rejects_oversized_artifact_without_calling_provider() -> None:
     assert provider.prompt is None
 
 
+def test_reviewer_bounds_custom_provider_mapping_before_schema_validation() -> None:
+    provider = FakeProvider({"observations": [], "padding": "x" * 100})
+    limits = replace(DEFAULT_INPUT_LIMITS, max_provider_response_bytes=40)
+
+    with pytest.raises(InputLimitError, match="decoded provider response"):
+        Reviewer(provider, limits=limits).review(
+            config=Config.load(EXAMPLE_CONFIG),
+            review="homepage_first_pass",
+            artifact="Welcome",
+        )
+
+
 def test_reviewer_exposes_provider_preflight_without_generation() -> None:
     provider = FakeProvider({"observations": []})
 

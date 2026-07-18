@@ -30,6 +30,7 @@ def render_report(
     report_format: ReportFormat | str = ReportFormat.TEXT,
     *,
     include_prompt: bool = False,
+    limits: InputLimits = DEFAULT_INPUT_LIMITS,
 ) -> str: ...
 
 def render_prompt(
@@ -53,12 +54,14 @@ def render(
     result: ReviewResult,
     *,
     include_prompt: bool = False,
+    limits: InputLimits = DEFAULT_INPUT_LIMITS,
 ) -> str: ...
 ```
 
 Proof Goblin publishes `TextReportRenderer`, `JsonReportRenderer`,
 `MarkdownReportRenderer`, and `HtmlReportRenderer` implementations. Their
-`render()` methods have the same signature. `include_prompt=True` is accepted
+`render()` methods have the same signature. Every complete UTF-8 document is
+checked against `limits.max_rendered_output_bytes`. `include_prompt=True` is accepted
 only by the JSON implementation; the other implementations raise
 `ReportRenderError` rather than silently ignoring it.
 

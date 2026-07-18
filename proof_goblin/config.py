@@ -11,7 +11,12 @@ from types import MappingProxyType
 from typing import Any
 
 from proof_goblin.filesystem import read_limited_regular_file
-from proof_goblin.limits import DEFAULT_INPUT_LIMITS, InputLimitError, InputLimits
+from proof_goblin.limits import (
+    DEFAULT_INPUT_LIMITS,
+    InputLimitError,
+    InputLimits,
+    measure_json_utf8_bytes,
+)
 
 CONFIG_FORMAT = "proof-goblin-config"
 SUPPORTED_SCHEMA_VERSIONS = frozenset({"1.0"})
@@ -139,6 +144,7 @@ class Config:
 
         return cls.from_mapping(
             data,
+            limits=limits,
             source_path=resolved_source_path,
             sha256=hashlib.sha256(content).hexdigest(),
         )
@@ -148,12 +154,22 @@ class Config:
         cls,
         data: object,
         *,
+        limits: InputLimits = DEFAULT_INPUT_LIMITS,
         source_path: Path | None = None,
         sha256: str | None = None,
     ) -> Config:
         """Validate already-decoded configuration data."""
 
         root = _require_mapping(data, "configuration")
+        try:
+            measured = measure_json_utf8_bytes(
+                root,
+                limits=limits,
+                boundary="decoded configuration mapping",
+            )
+        except (TypeError, ValueError) as exc:
+            raise ConfigValidationError(str(exc)) from exc
+        limits.enforce_config(measured)
         _require_exact_value(root, "format", CONFIG_FORMAT)
         schema_version = _require_string(root, "schema_version")
         if schema_version not in SUPPORTED_SCHEMA_VERSIONS:

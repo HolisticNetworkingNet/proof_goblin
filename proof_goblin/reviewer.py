@@ -10,7 +10,11 @@ from jsonschema import SchemaError, ValidationError, validators
 
 from proof_goblin.builder import Prompt, PromptBuilder, ResolvedReview
 from proof_goblin.config import Config
-from proof_goblin.limits import DEFAULT_INPUT_LIMITS, InputLimits
+from proof_goblin.limits import (
+    DEFAULT_INPUT_LIMITS,
+    InputLimits,
+    measure_json_utf8_bytes,
+)
 from proof_goblin.observations import Observation, ReviewAttribution, ReviewResult
 from proof_goblin.providers.base import (
     Provider,
@@ -134,6 +138,15 @@ class Reviewer:
             )
         else:
             response = generate_prepared(prepared.request)
+        try:
+            measured = measure_json_utf8_bytes(
+                response.data,
+                limits=self.limits,
+                boundary="decoded provider response",
+            )
+        except (TypeError, ValueError) as exc:
+            raise ReviewOutputValidationError(str(exc)) from exc
+        self.limits.enforce_provider_response(measured)
         _validate_output(response.data, prepared.resolved.output_schema)
         observations = _read_observations(response.data)
 

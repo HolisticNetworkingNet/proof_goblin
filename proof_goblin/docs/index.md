@@ -16,10 +16,10 @@ overview
 philosophy
 concepts
 getting-started
+configuration
 bundled-documentation-reviews
 command-line-interface
 errors
-configuration
 prompt-assembly
 artifact-media-types
 input-limits

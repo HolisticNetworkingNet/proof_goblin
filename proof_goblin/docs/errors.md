@@ -209,6 +209,8 @@ That detail can vary and should be treated as potentially sensitive. Whether a
 retry is safe depends on the underlying failure; an ambiguous transport failure
 may have reached the provider and incurred cost even when no usable response
 was returned.
+The bounded SDK and host retry contract is documented in
+{doc}`execution-contract`.
 
 ## Review validation
 

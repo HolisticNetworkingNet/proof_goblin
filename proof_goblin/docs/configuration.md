@@ -343,7 +343,7 @@ Proof Goblin settings registry.
 | `PromptBuilder.build(...)` | Review, artifact, artifact name, and media type | `artifact_name="artifact"`; media type is inferred unless explicit. |
 | `Reviewer(provider, limits=...)` | Execution-time prompt and decoded-response policy | `DEFAULT_INPUT_LIMITS`; the reviewer builds, preflights, bounds, and validates using this policy. |
 | `Reviewer.preflight(...)` and `Reviewer.review(...)` | Same review inputs as the builder | Prepare the same credential-free provider request; `review()` additionally executes it. |
-| `OpenAIProvider(model=..., max_output_tokens=..., limits=..., client=...)` | Model, reserved output allowance, response policy, and SDK client | Model `gpt-5.6`; 8,192 positive output tokens; `DEFAULT_INPUT_LIMITS`; lazily created default SDK client. |
+| `OpenAIProvider(model=..., max_output_tokens=..., timeout_seconds=..., max_retries=..., limits=..., client=...)` | Model, output allowance, transport policy, response policy, and SDK client | Model `gpt-5.6`; 8,192 output tokens; 60-second timeout; two SDK retries; `DEFAULT_INPUT_LIMITS`; lazily created client. An injected client owns its transport policy. |
 | `ReviewCache(directory=...)` | Cache storage location | `PROOF_GOBLIN_CACHE_DIR`, then the platform default. This lower-level class is available from `proof_goblin.cache`. |
 | `render_prompt(prompt, prompt_format=...)` | Prompt presentation | `text`; every successful format includes the complete prompt and artifact. |
 | `render_report(result, report_format=..., include_prompt=..., limits=...)` | Report presentation, optional prompt retention, and output ceiling | `text`, no prompt, and `DEFAULT_INPUT_LIMITS`; prompt inclusion is JSON-only. |

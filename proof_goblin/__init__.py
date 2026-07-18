@@ -45,7 +45,9 @@ from proof_goblin.prompt_rendering import (
 )
 from proof_goblin.providers import (
     DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_OPENAI_MAX_RETRIES,
     DEFAULT_OPENAI_MODEL,
+    DEFAULT_OPENAI_TIMEOUT_SECONDS,
     OpenAIProvider,
     Provider,
     ProviderCapacityStatus,
@@ -87,7 +89,9 @@ __all__ = [
     "ConfigError",
     "ConfigParseError",
     "ConfigValidationError",
+    "DEFAULT_OPENAI_MAX_RETRIES",
     "DEFAULT_OPENAI_MODEL",
+    "DEFAULT_OPENAI_TIMEOUT_SECONDS",
     "DEFAULT_INPUT_LIMITS",
     "DEFAULT_MAX_OUTPUT_TOKENS",
     "HtmlReportRenderer",

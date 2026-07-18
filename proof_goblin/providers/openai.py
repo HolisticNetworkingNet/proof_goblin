@@ -23,6 +23,8 @@ from proof_goblin.providers.base import (
 
 DEFAULT_OPENAI_MODEL = "gpt-5.6"
 DEFAULT_MAX_OUTPUT_TOKENS = 8_192
+DEFAULT_OPENAI_TIMEOUT_SECONDS = 60.0
+DEFAULT_OPENAI_MAX_RETRIES = 2
 
 
 class OpenAIProvider:
@@ -33,6 +35,8 @@ class OpenAIProvider:
         *,
         model: str = DEFAULT_OPENAI_MODEL,
         max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
+        timeout_seconds: float = DEFAULT_OPENAI_TIMEOUT_SECONDS,
+        max_retries: int = DEFAULT_OPENAI_MAX_RETRIES,
         limits: InputLimits = DEFAULT_INPUT_LIMITS,
         client: Any | None = None,
     ) -> None:
@@ -44,8 +48,22 @@ class OpenAIProvider:
             or max_output_tokens <= 0
         ):
             raise ProviderRequestError("max_output_tokens must be a positive integer")
+        if (
+            isinstance(timeout_seconds, bool)
+            or not isinstance(timeout_seconds, (int, float))
+            or timeout_seconds <= 0
+        ):
+            raise ProviderRequestError("timeout_seconds must be a positive number")
+        if (
+            isinstance(max_retries, bool)
+            or not isinstance(max_retries, int)
+            or max_retries < 0
+        ):
+            raise ProviderRequestError("max_retries must be a non-negative integer")
         self.model = model
         self.max_output_tokens = max_output_tokens
+        self.timeout_seconds = float(timeout_seconds)
+        self.max_retries = max_retries
         self.limits = limits
         self._client = client
 
@@ -150,11 +168,14 @@ class OpenAIProvider:
 
     def _get_client(self) -> Any:
         if self._client is None:
-            self._client = _create_client()
+            self._client = _create_client(
+                timeout_seconds=self.timeout_seconds,
+                max_retries=self.max_retries,
+            )
         return self._client
 
 
-def _create_client() -> Any:
+def _create_client(*, timeout_seconds: float, max_retries: int) -> Any:
     try:
         from openai import OpenAI
     except ImportError as exc:
@@ -163,7 +184,7 @@ def _create_client() -> Any:
             "Install it with: python -m pip install -e '.[openai]'"
         ) from exc
     try:
-        return OpenAI()
+        return OpenAI(timeout=timeout_seconds, max_retries=max_retries)
     except Exception as exc:
         raise ProviderUnavailableError(
             "Could not initialize the OpenAI client. Set OPENAI_API_KEY in the "

@@ -23,6 +23,7 @@ errors
 prompt-assembly
 artifact-media-types
 input-limits
+execution-contract
 openai-provider
 data-handling
 filesystem-boundaries

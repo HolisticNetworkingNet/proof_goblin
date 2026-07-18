@@ -104,6 +104,12 @@ allowance used in both preflight and the Responses API request. The default is
 8,192. An application can inspect readiness without generating output by
 calling `Reviewer.preflight()` with the same review arguments.
 
+The default SDK client uses `timeout_seconds=60.0` and `max_retries=2`. One
+Proof Goblin provider call may consequently contain as many as three SDK HTTP
+attempts. Pass `max_retries=0` to disable SDK retries. An injected `client`
+retains its own transport policy. See {doc}`execution-contract` for timeout,
+ambiguous-failure, concurrency, and duplicate-cost guidance.
+
 ## Errors
 
 Provider failures use focused exception types:

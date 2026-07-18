@@ -8,6 +8,8 @@ import pytest
 
 from proof_goblin import (
     DEFAULT_INPUT_LIMITS,
+    DEFAULT_OPENAI_MAX_RETRIES,
+    DEFAULT_OPENAI_TIMEOUT_SECONDS,
     Config,
     InputLimitError,
     OpenAIProvider,
@@ -59,6 +61,51 @@ def test_openai_provider_creates_real_sdk_client_without_request(
 
     assert provider.client is not None
     assert provider.client.responses is not None
+    assert provider.client.timeout == DEFAULT_OPENAI_TIMEOUT_SECONDS
+    assert provider.client.max_retries == DEFAULT_OPENAI_MAX_RETRIES
+
+
+def test_openai_provider_creates_client_with_bounded_transport_policy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_create_client(*, timeout_seconds: float, max_retries: int) -> object:
+        captured.update(
+            timeout_seconds=timeout_seconds,
+            max_retries=max_retries,
+        )
+        return object()
+
+    monkeypatch.setattr(
+        "proof_goblin.providers.openai._create_client",
+        fake_create_client,
+    )
+
+    provider = OpenAIProvider()
+
+    assert provider.client is not None
+    assert captured == {
+        "timeout_seconds": DEFAULT_OPENAI_TIMEOUT_SECONDS,
+        "max_retries": DEFAULT_OPENAI_MAX_RETRIES,
+    }
+
+
+@pytest.mark.parametrize(
+    ("argument", "value"),
+    [
+        ("timeout_seconds", 0),
+        ("timeout_seconds", True),
+        ("max_retries", -1),
+        ("max_retries", True),
+    ],
+)
+def test_openai_provider_rejects_invalid_transport_policy(
+    argument: str,
+    value: object,
+) -> None:
+    with pytest.raises(ProviderRequestError, match=argument):
+        OpenAIProvider(**{argument: value}, client=make_client(None))
 
 
 def test_openai_provider_uses_responses_api_with_strict_schema() -> None:

@@ -162,6 +162,10 @@ retry policy appropriate to each provider error. A provider response ID is
 available only after a successful response and is useful for correlation, not
 as a pre-request idempotency key.
 
+The OpenAI adapter's default 60-second timeout, two SDK retries, CLI reservation
+heartbeat, and duplicate-cost contract are defined together in
+{doc}`execution-contract`.
+
 ## Failure contract
 
 Integrations should handle errors at the boundary where the host can translate

@@ -10,9 +10,37 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
+authors = [
+    { name = "Thomas Belknap" },
+]
+keywords = [
+    "ai",
+    "document-review",
+    "prompt-engineering",
+    "quality-assurance",
+    "writing",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Text Processing",
+]
 dependencies = [
     "jsonschema>=4.23",
 ]
+
+[project.urls]
+Documentation = "https://github.com/HolisticNetworkingNet/proof_goblin/tree/main/proof_goblin/docs"
+Issues = "https://github.com/HolisticNetworkingNet/proof_goblin/issues"
+"Release notes" = "https://github.com/HolisticNetworkingNet/proof_goblin/releases"
+Source = "https://github.com/HolisticNetworkingNet/proof_goblin"
 
 [project.scripts]
 proof-goblin = "proof_goblin.cli:main"
@@ -20,7 +48,8 @@ proof-goblin = "proof_goblin.cli:main"
 [project.optional-dependencies]
 dev = [
     "build>=1.2",
-    "ruff==0.15.22",
+    "ruff==0.15.21",
+    "twine>=6.1",
 ]
 docs = [
     "furo>=2024.8.6",
@@ -37,8 +66,12 @@ test = [
     "pytest>=8.3",
 ]
 
+[tool.setuptools]
+include-package-data = false
+
 [tool.setuptools.packages.find]
 include = ["proof_goblin*"]
+namespaces = false
 
 [tool.setuptools.package-data]
 proof_goblin = ["configs/*.pgcfg", "schemas/*.json"]

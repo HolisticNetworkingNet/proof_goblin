@@ -1,0 +1,10 @@
+include LICENSE
+include README.md
+include pyproject.toml
+
+prune proof_goblin/docs
+prune proof_goblin/examples
+prune proof_goblin/tests
+
+recursive-include proof_goblin/configs *.pgcfg
+recursive-include proof_goblin/schemas *.json

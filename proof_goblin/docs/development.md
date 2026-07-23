@@ -26,7 +26,8 @@ python -m pip install -e ".[dev,test,docs]"
 ```
 
 The optional `dev` dependency set contains repository-development tools rather
-than packages required by Proof Goblin at runtime.
+than packages required by Proof Goblin at runtime. It includes the isolated
+build frontend and distribution-metadata checker used by release validation.
 
 ## Linting and formatting
 
@@ -64,7 +65,11 @@ GitHub Actions separates fast feedback from complete pull-request validation:
   branch is updated, reopened, or marked ready for review. They run Ruff lint
   (`ruff check .`), Ruff formatting (`ruff format --check .`), the complete
   warnings-as-errors pytest matrix, `proof-goblin --help` in every matrix lane,
-  and the strict Sphinx documentation build.
+  the strict Sphinx documentation build, and artifact validation. Artifact
+  validation builds the wheel and source distribution through isolated PEP 517,
+  runs `twine check --strict`, enforces the package-content boundary, and tests
+  wheel, source-distribution, and OpenAI-extra installation in clean
+  environments without a provider request.
 - **Dependency security** runs on every pull request, every Monday on a
   schedule, and on manual dispatch. It audits the complete installed dependency
   surface for known vulnerabilities.
@@ -88,6 +93,9 @@ python -m pytest -q -W error
 proof-goblin --help
 python -m sphinx -W --keep-going -b html proof_goblin/docs proof_goblin/docs/_build/html
 ```
+
+For release-candidate artifact commands and the 0.1.0 version, tag, release-note,
+and multi-document scope contracts, see {doc}`releasing`.
 
 ## Dependency security
 

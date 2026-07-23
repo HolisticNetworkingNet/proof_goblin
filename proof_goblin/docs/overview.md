@@ -7,11 +7,11 @@ review from a portable `.pgcfg` configuration bundle, asks a model to apply that
 review, validates the structured response, and returns evidence-backed
 **Observations**.
 
-The project is not yet published as an installable release. Developers can
-install the `proof-goblin` package from this repository and verify it without an
-API key by following {doc}`getting-started`. The core package uses `jsonschema`;
-live OpenAI reviews, documentation builds, and tests are provided through
-optional dependency groups.
+Install the `proof-goblin` package from PyPI and verify it without an API key by
+following {doc}`getting-started`. The core package uses `jsonschema`; live
+OpenAI reviews are provided through the optional `openai` dependency group.
+Documentation, testing, and release tools are separate contributor dependency
+groups.
 
 ## Implemented interfaces
 
@@ -27,9 +27,10 @@ entry points:
   smoke test against the included restaurant example. See
   {doc}`openai-provider`.
 
-Continuous-integration workflows are planned. The architecture also leaves room
-for other providers and application interfaces, including a possible web
-interface, without coupling them to the core review model.
+Continuous integration validates the supported Python versions and
+representative operating systems. The architecture also leaves room for other
+providers and application interfaces, including a possible web interface,
+without coupling them to the core review model.
 
 ## Design principles
 

@@ -35,6 +35,18 @@ jobs:
       - name: Check Ruff formatting
         run: ruff format --check .
 
+      - name: Build wheel and source distribution
+        run: python -m build
+
+      - name: Check distribution metadata and rendering
+        run: python -m twine check --strict dist/*
+
+      - name: Validate distribution contents
+        run: python scripts/validate_distribution.py dist
+
+      - name: Validate clean artifact installations
+        run: python scripts/validate_installation.py dist
+
   tests:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}

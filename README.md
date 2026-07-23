@@ -19,7 +19,7 @@ The result is a more useful kind of AI collaboration: writers remain in control 
 
 Reviews are assembled from portable `.pgcfg` configuration files that define lenses, missions, protocols, and output schemas. Because those configurations can be stored in source control, review definitions are inspectable, versionable, shareable, and ready for automation.
 
-Proof Goblin can be used as a Python library or from the command line. It is framework agnostic and deliberately independent of any particular web application or user interface. Continuous-integration workflows are planned.
+Proof Goblin can be used as a Python library or from the command line. It is framework agnostic and deliberately independent of any particular web application or user interface. The project validates every pull request across its supported Python versions and representative operating systems.
 
 ## What Proof Goblin Does
 
@@ -42,57 +42,94 @@ Proof Goblin can be used as a Python library or from the command line. It is fra
 
 Start with the guide that matches what you want to do:
 
-- **New users and writers:** [Getting Started](proof_goblin/docs/getting-started.md) and [The Philosophy of Proof Goblin](proof_goblin/docs/philosophy.md)
-- **Command-line users:** [Command-Line Interface](proof_goblin/docs/command-line-interface.md)
-- **Application integrators:** [Host Application Integration](proof_goblin/docs/host-integration.md)
-- **Review authors:** [Review Grammar](proof_goblin/docs/concepts.md), [Configuration Bundles](proof_goblin/docs/configuration.md), and [Bundled Documentation Reviews](proof_goblin/docs/bundled-documentation-reviews.md)
-- **Live-review operators:** [OpenAI Provider](proof_goblin/docs/openai-provider.md) and [Data Handling and Retention](proof_goblin/docs/data-handling.md)
-- **Contributors:** [Development](proof_goblin/docs/development.md), including instructions for building the documentation locally
+- **New users and writers:** [Getting Started](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/getting-started.md) and [The Philosophy of Proof Goblin](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/philosophy.md)
+- **Command-line users:** [Command-Line Interface](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/command-line-interface.md)
+- **Application integrators:** [Host Application Integration](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/host-integration.md)
+- **Review authors:** [Review Grammar](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/concepts.md), [Configuration Bundles](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/configuration.md), and [Bundled Documentation Reviews](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/bundled-documentation-reviews.md)
+- **Live-review operators:** [OpenAI Provider](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/openai-provider.md) and [Data Handling and Retention](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/data-handling.md)
+- **Contributors:** [Development](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/development.md), including source-checkout and documentation-build instructions
 
 And yes: of course, every document has been proofed by the Proof Goblin!
 
+## Installation
+
+Install the core library and command-line interface from PyPI:
+
+```bash
+python -m pip install proof-goblin
+proof-goblin --help
+```
+
+Install the optional OpenAI integration when you want to run live reviews:
+
+```bash
+python -m pip install "proof-goblin[openai]"
+```
+
+The following installed-package smoke test loads the bundled documentation
+configuration and assembles a prompt locally. It does not require an API key,
+contact a provider, or depend on a source checkout:
+
+```python
+from importlib.resources import as_file, files
+
+from proof_goblin import Config, PromptBuilder
+
+
+bundle = files("proof_goblin").joinpath("configs/documentation.pgcfg")
+with as_file(bundle) as config_path:
+    config = Config.load(config_path)
+
+prompt = PromptBuilder(config).build(
+    review="technical_writer_first_pass",
+    artifact="# Draft\n\nThis is a document to review.",
+    artifact_name="draft.md",
+)
+print(prompt.review_name, prompt.artifact_media_type)
+```
+
 ## OpenAI provider
 
-Install the optional OpenAI integration and set `OPENAI_API_KEY` in your
-environment:
+After installing the optional OpenAI integration, set `OPENAI_API_KEY` in your
+environment before making a live request:
 
 > A live review sends the complete artifact and selected review instructions
 > to OpenAI and may incur provider charges. Confirm that the content is approved
-> for external processing, and review [Data Handling and Retention](proof_goblin/docs/data-handling.md)
+> for external processing, and review [Data Handling and Retention](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/data-handling.md)
 > before submitting sensitive material.
 
 ```bash
-python -m pip install -e ".[openai]"
 read -s "OPENAI_API_KEY?OpenAI API key: "
 export OPENAI_API_KEY
-python proof_goblin/examples/live_openai_review.py
 ```
 
-The live example uses `gpt-5.6` by default. Set `OPENAI_MODEL` to use a different
-compatible model.
+See the [OpenAI Provider guide](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/openai-provider.md)
+for library and command-line examples. The repository's live example is a
+contributor example that requires a source checkout.
 
 ## Command line
 
-After following [Getting Started](proof_goblin/docs/getting-started.md), use
+After following [Getting Started](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/getting-started.md), use
 `prompt` to assemble and print the complete prompt locally without contacting a
 provider. Use `review` to send the assembled request to OpenAI and print a
 plain-text report to standard output:
 
 ```bash
-proof-goblin prompt proof_goblin/docs/overview.md \
-  --config proof_goblin/configs/documentation.pgcfg \
-  --review technical_writer_first_pass
+proof-goblin prompt draft.md \
+  --config review.pgcfg \
+  --review first_pass
 
-proof-goblin review proof_goblin/docs/overview.md \
-  --config proof_goblin/configs/documentation.pgcfg \
-  --review technical_writer_first_pass
+proof-goblin review draft.md \
+  --config review.pgcfg \
+  --review first_pass
 ```
 
-See the [Command-Line Interface](proof_goblin/docs/command-line-interface.md)
+See the [Command-Line Interface](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/command-line-interface.md)
 for file output, report formats, caching, and provider behavior.
 
 ## License
 
 Proof Goblin is licensed under the MIT License.
 
-See the [LICENSE](LICENSE) file for the full license text.
+See the [LICENSE](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/LICENSE)
+file for the full license text.

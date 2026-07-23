@@ -30,6 +30,7 @@ filesystem-boundaries
 report-formats
 host-integration
 development
+releasing
 ```
 
 ```{note}

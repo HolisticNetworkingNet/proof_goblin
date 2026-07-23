@@ -22,7 +22,7 @@ parameters rather than assembling a second variant.
 ## Install the optional integration
 
 ```bash
-python -m pip install -e ".[openai]"
+python -m pip install "proof-goblin[openai]"
 ```
 
 Set `OPENAI_API_KEY` in the environment used by PyCharm or your terminal. Do not
@@ -60,10 +60,10 @@ results and CLI cache entries omit prompt fields, but their observations and
 evidence can quote the artifact. See {doc}`data-handling` for the complete
 lifecycle and ownership boundaries.
 
-## Run a live review
+## Run the source-checkout example
 
-The repository includes a fixed smoke-test script using the restaurant bundle
-and example homepage:
+Contributors working from a source checkout can run the repository's fixed
+smoke-test script using the restaurant bundle and example homepage:
 
 ```bash
 python proof_goblin/examples/live_openai_review.py

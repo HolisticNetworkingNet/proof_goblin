@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/proof_goblin.iml" filepath="$PROJECT_DIR$/.idea/proof_goblin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/proof-goblin.iml" filepath="$PROJECT_DIR$/.idea/proof-goblin.iml" />
     </modules>
   </component>
 </project>

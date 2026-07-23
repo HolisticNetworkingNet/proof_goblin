@@ -133,3 +133,15 @@ Proof Goblin is licensed under the MIT License.
 
 See the [LICENSE](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/LICENSE)
 file for the full license text.
+
+## Release integrity
+
+Production distributions are published through PyPI Trusted Publishing and
+carry a publish attestation for each wheel and source distribution. See the
+[release process](https://github.com/HolisticNetworkingNet/proof_goblin/blob/main/proof_goblin/docs/releasing.md)
+for the workflow identity, hash and provenance verification procedure, account
+controls, and recovery plan.
+
+Attestations provide origin and integrity evidence. They do not assert that the
+package is vulnerability-free, intrinsically safe, or suitable for a particular
+use.

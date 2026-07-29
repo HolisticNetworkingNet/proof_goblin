@@ -33,6 +33,7 @@ def render_report(
     limits: InputLimits = DEFAULT_INPUT_LIMITS,
 ) -> str: ...
 
+
 def render_prompt(
     prompt: Prompt,
     prompt_format: PromptFormat | str = PromptFormat.TEXT,

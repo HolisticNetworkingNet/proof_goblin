@@ -48,7 +48,7 @@ proof-goblin = "proof_goblin.cli:main"
 [project.optional-dependencies]
 dev = [
     "build>=1.2",
-    "ruff==0.16.1",
+    "ruff==0.16.3",
     "twine>=6.1",
 ]
 docs = [
